@@ -1,89 +1,66 @@
-# Public Release Roadmap
+# Public roadmap
 
-This is the **public-facing release map**. It intentionally does not expose private implementation notes, local paths, unreleased binaries, or internal rollback material.
+[Home](README.md) · [Release workflow](docs/RELEASE-WORKFLOW.md)
 
-## Visual map
+Updated 2026-10-04. Priority order is a plan, not evidence of implementation or permission to publish.
 
 ```mermaid
 flowchart TD
-    A[Auto NVG v0.4 gameplay test] --> B{Stable enough to accept engine baseline?}
-    B -->|No| A1[Fix / retest privately]
-    A1 --> A
-    B -->|Yes| C[Record short One Key Light + Unified Lights showcase clip]
-    C --> D[Prepare Light Mods public release packages]
-    D --> E[Credits / licensing / install docs / checksums]
-    E --> F[Publish Light Mods release]
-    F --> G[Grenades Expanded release work]
-    G --> H[GEKF historical recovery + locked spec]
-    H --> I[GEKF v1.0 F13-F24]
-    I --> J[GEKF v1.1 Mouse6-Mouse8]
-    J --> K[GEKF v1.2 Action Ownership]
-    K --> L[GEKF v1.3 Gesture API]
-    L --> M[GEKF v1.4 Diagnostics / conflict inspector]
+    A["Auto NVG v0.4 owner gameplay testing"] --> B["Auto NVG stabilization decision"]
+    B --> C["Record One Key + Unified Discord showcase"]
+    C --> D["Prepare Light Mods public packages / docs"]
+    D --> E{"PUBLICATION AUTHORIZATION"}
+    E -->|"Specific current-task release approval"| F["GitHub Releases"]
+    F --> G["Grenades Expanded"]
+    G --> H["GEKF historical recovery"]
+    H --> I["Lock GEKF spec"]
+    I --> J["GEKF v1.0 F13-F24"]
+    J --> K["GEKF v1.1 Mouse6-Mouse8"]
+    K --> L["GEKF v1.2 Action Ownership"]
+    L --> M["GEKF v1.3 optional gesture API"]
+    M --> N["GEKF v1.4 diagnostics / conflict inspector"]
 ```
 
-## Immediate checklist
+## Auto NVG acceptance and stabilization
 
-### 1. Auto NVG v0.4 — gameplay acceptance
-- [ ] Confirm Bodycam saved settings are intact.
-- [ ] Confirm normal camera / free aim behavior.
-- [ ] Confirm PiP / scopes behave correctly.
-- [ ] Confirm full-image NVG exposure is coherent across sky, terrain, interiors, and weapon geometry.
-- [ ] Confirm Gen 1 remains manual.
-- [ ] Confirm Gen 2 is slower/weaker with stronger localized halo/washout.
-- [ ] Confirm Gen 3 is faster/stronger with tighter halo and better recovery.
-- [ ] Retest input styles and gain positions on the exact v0.4 candidate.
-- [ ] Exercise off/on, generation changes, save/load, level transitions, and a longer session.
-- [ ] Decide whether v0.4 is stable enough to become the maintained engine baseline.
+- [ ] Owner verifies preserved Bodycam settings, camera/free aim, PiP, scopes and ordinary gameplay.
+- [ ] Verify coherent full-image response across sky, terrain, interiors and near/weapon geometry.
+- [ ] Gen 1 remains manual; Gen 2 slower/weaker with larger localized halo/washout/slower recovery; Gen 3 faster/stronger with tighter halo/less washout/faster recovery.
+- [ ] Check no obvious pumping; retest Classic Beef/Better, Tap Toggle, Hold Toggle, five gain positions, persistence, endpoint no-op and hold-repeat suppression on v0.4.
+- [ ] Exercise off/on, generation changes, save/load, level transition, practical resource/resolution recreation and a longer session.
+- [ ] Owner decides stabilization; no automatic TESTED promotion. Auto NVG is **NOT PUBLICLY RELEASED**.
 
-### 2. Light Mods — short Discord showcase
-After Auto NVG testing reaches a stable stopping point:
+## Light Mods presentation and preparation
 
-- [ ] Record a short clean in-game clip of **One Key Light 2.0**.
-- [ ] Show Tap / Double Tap / Hold behavior clearly.
-- [ ] Show the quick-light menu if appropriate.
-- [ ] Show UTLF white light / IR / laser behavior.
-- [ ] Show **Unified Player Light Controls 2.0** behavior.
-- [ ] Keep the clip short enough for easy Discord viewing.
-- [ ] Verify the recording does not expose debugging overlays or unrelated broken behavior.
-- [ ] Post/share the clip on Discord.
+- [x] One Key Light 2.0 and Unified Player Light Controls 2.0: TESTED / FINAL-FOR-NOW for the accepted setup.
+- [x] Document features, controls, FOMOD options, dependencies, install/update/removal and verified file priority.
+- [ ] After Auto NVG reaches a stable stopping point, [record the short Discord showcase](docs/LIGHT-SHOWCASE-CHECKLIST.md).
+- [ ] Select clean final packages; reconcile final delivery metadata with these docs.
+- [ ] Clear [component redistribution review](docs/LIGHT-REDISTRIBUTION-REVIEW.md); finalize notices, credits and checksums.
+- [ ] Place the selected screenshot at `assets/README-banner.png`.
+- [ ] Obtain current explicit public-write and **specific release** authorization.
+- [ ] Create versioned GitHub Releases only after that authorization.
+- [ ] Share community announcement only with explicit posting authorization.
 
-This is a presentation/community task. The Light Mods remain **TESTED / FINAL-FOR-NOW** unless recording exposes a real bug.
+The showcase does not add a TESTED gate. Keep implementation parked unless recording reveals a real bug.
 
-### 3. Light Mods — public release preparation
-- [ ] Audit redistributed files and permissions.
-- [ ] Prepare clean public packages.
-- [ ] Write installation / upgrade / uninstall instructions.
-- [ ] Document required and optional dependencies.
-- [ ] Write compatibility / known-issues section.
-- [ ] Produce release checksums.
-- [ ] Add credits and upstream attribution.
-- [ ] Publish versioned GitHub Releases.
+## Grenades Expanded
 
-### 4. Grenades Expanded
-- [ ] Complete remaining gameplay acceptance.
-- [ ] Finish radial-menu design before implementation.
-- [ ] Lock the implementation spec when design is mature.
-- [ ] Complete implementation and validation.
-- [ ] Run public-release licensing / packaging gate.
+- [ ] Complete remaining grenade/select/throw/crafting/lifecycle acceptance.
+- [ ] Finish radial design (IDEA) and explicitly lock the spec before implementation.
+- [ ] Validate/test any implementation; complete packaging/redistribution/authorization gates.
 
-### 5. GEKF / Universal Input & Action Framework
-- [ ] Recover and verify historical GEKF docs and old engine diffs.
-- [ ] Confirm what was demonstrated historically versus what remained unresolved.
-- [ ] Lock the implementation specification.
-- [ ] v1.0: F13-F24 first-class MCM bindings.
+## GEKF
+
+- [ ] Establish stable maintained Bodycam/MT baseline.
+- [ ] Recover actual historical documentation and engine diffs; distinguish old detection evidence from a finished binding system.
+- [ ] Lock the current implementation spec.
+- [ ] v1.0: first-class F13-F24 binding.
 - [ ] v1.1: Mouse6-Mouse8.
-- [ ] v1.2: transactional vanilla Action Ownership.
-- [ ] v1.3: optional Tap / Double Tap / Hold API.
-- [ ] v1.4: binding / ownership diagnostics and conflict inspector.
+- [ ] v1.2: transactional Action Ownership.
+- [ ] v1.3: optional gesture API.
+- [ ] v1.4: diagnostics / conflict inspector.
 
-## State definitions used here
+## States
 
-- **IDEA** — proposed, not approved.
-- **DECIDED** — approved design or requirement.
-- **IMPLEMENTED** — present in source.
-- **LOCALLY VALIDATED** — passed local/static/automated validation.
-- **TESTED** — confirmed working through owner gameplay testing.
-- **FINAL-FOR-NOW** — accepted current endpoint; reopen only for a bug, compatibility issue, or approved enhancement.
-
-Public release is an additional packaging/licensing decision and is **not implied** by TESTED.
+IDEA = proposed; DECIDED = approved design; IMPLEMENTED = present in code; LOCALLY VALIDATED = applicable local checks passed; TESTED = actual owner gameplay evidence for the stated candidate/scope; FINAL-FOR-NOW = accepted tested state intentionally parked. PUBLIC RELEASE is a separate authorized distribution decision.
