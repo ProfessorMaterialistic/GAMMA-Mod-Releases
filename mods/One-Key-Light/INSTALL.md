@@ -2,7 +2,7 @@
 
 [Overview and controls](README.md) · [Requirements and MO2 order](COMPATIBILITY.md) · [Credits](CREDITS.md)
 
-**No public package is available from this repository yet.** This documents the verified final 2.0 installer flow for a future authorized release. It is not a download offer.
+**Public download held for bundled-file redistribution review.** The flow below documents the final 2.0 installer. Install only after the authorized archive appears; [download status](README.md#download).
 
 ## Before installing
 
@@ -10,7 +10,7 @@ Verify [required host and feature dependencies](COMPATIBILITY.md), including MT-
 
 ## MO2 / FOMOD
 
-1. When an authorized release exists, download its exact mod archive and verify its checksum if provided.
+1. Once published, download the exact 2.0 archive from this hub’s [GitHub Releases](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/releases) and verify its SHA-256. No 2.0 Release exists yet.
 2. In MO2, choose **Install a new mod from an archive**, select the archive, and keep it as a separate 2.0 entry. Do not manually copy every alternative folder into gamedata.
 3. Confirm **GAMMA and MCM are installed**.
 4. Choose exactly one **Headlamp backend**: **Native / G2X**, or **Soy Adjustable Headlamps 1.0** if that mod is separately installed. Native needs no Soy dependency; its beam is not tuned by Soy sliders.
@@ -41,3 +41,19 @@ If you used **Clear Vanilla Torch Binding**, use **Restore Vanilla Torch Binding
 Close GAMMA, disable this mod's MO2 entry, and re-enable the prior matched setup if needed. Dependencies continue with their own winning files when the Light overrides are removed. Keep the original entries recoverable; do not delete saves or dependency mods. Removing one companion leaves the other independent, but changes the available advanced/gesture functionality. Shared settings remain; an exact settings rollback requires your own previously preserved setup.
 
 See [troubleshooting](../../docs/TROUBLESHOOTING.md) before reporting a problem.
+
+## Verified installer choices
+
+| Step / choice | Effect | Absent dependency behavior |
+| --- | --- | --- |
+| GAMMA and MCM are installed | Confirms required host baseline | Does not install the host, MCM or engine |
+| Native / G2X | Uses engine headlamp and existing presets | No Soy Adjustable requirement; beam sliders do not tune the native light |
+| Soy Adjustable Headlamps 1.0 | Installs the Adjustable bridge / enables supported tuning | Select only with its separate dependency; no dependency detection is implied by FOMOD |
+| No Laser Settings integration | Skips laser bridge | No working Laser Settings integration added |
+| Laser Settings 2.7 installed | Installs laser compatibility bridge | Requires separate Laser Settings and compatible weapon |
+| UTLF IR: Not installed | Skips IR weapon bridge | Does not install / remove upstream IR assets |
+| UTLF IR: Soy 1.03 + UTLF 1.0.1 installed | Installs weapon-IR compatibility | Requires both separately installed dependencies and suitable NVG/equipment |
+| IR Headlamp: Not installed | Skips IR headlamp bridge | IR headlamp does not become available by assigning a key |
+| IR Headlamp: Soy 1.3.0 + NVG illuminator installed | Installs IR headlamp compatibility | Requires dependency and illuminator separately |
+
+Missing integrations are unavailable; equipped/power failures can show locks or fail dark while preserving intent. The installer choices are manual declarations, not automatic dependency installation or auto-hide detection.

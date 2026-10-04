@@ -1,39 +1,47 @@
 # GAMMA Mod Releases
 
-**Player light controls, NVG projects, and grenade tools for S.T.A.L.K.E.R. Anomaly / GAMMA.**
+Player light controls and community projects for **S.T.A.L.K.E.R. Anomaly / GAMMA**.
 
-This is the public release hub: features, requirements, installation, compatibility, and community support. Development remains in the private repository.
+The Light pair is **TESTED / FINAL-FOR-NOW**. Public downloads are held while bundled-file redistribution review is completed.
 
-**No GitHub download releases are published here yet.** The Light Mods are gameplay **TESTED / FINAL-FOR-NOW** and in public-release preparation. Testing does not authorize publication.
+## One Key Light 2.0
 
-| Mod | What it does | Current public status |
-| --- | --- | --- |
-| [One Key Light 2.0](mods/One-Key-Light/README.md) | Tap, Double Tap, Hold, and a Quick Light Menu | Release preparation; no public download |
-| [Unified Player Light Controls 2.0](mods/Unified-Player-Light-Controls/README.md) | Saved light modes, NVG linking, and weapon/laser AUTO | Release preparation; no public download |
-| [Beef's NVG Automatic Gain Control](mods/Beefs-NVG-Automatic-Gain-Control/README.md) | Generation-aware automatic NVG exposure | **NOT PUBLICLY RELEASED**; owner acceptance pending |
-| [Grenades Expanded](mods/Grenades-Expanded/README.md) | Gesture selection and quick throw of existing grenades | **IN DEVELOPMENT**; radial menu remains IDEA |
-| GEKF / Universal Input & Action Framework | Planned input and action infrastructure | DECIDED architecture; not implemented on the maintained base |
+Control your installed lights with one key: **Tap, Double Tap, Hold**, or the **Quick Light Menu**. Works independently; add Unified for advanced modes and NVG linking.
 
-## Start here
+- Configurable gestures, menu themes and readable device states.
+- Normal/IR headlamp support, weapon lights and optional laser integration.
+- Explicit vanilla Torch binding clear/restore.
 
-[Mod index](docs/MOD-INDEX.md) · [Installation guide](docs/INSTALLATION-GUIDE.md) · [Troubleshooting](docs/TROUBLESHOOTING.md)
+**Public status: release held.**
 
-Each Light Mod works independently. Using both adds gesture/menu control to Unified's advanced light modes. Their pages explain which dependencies are required for each feature and which installer options to choose.
+[Download status](mods/One-Key-Light/README.md#download) · [Install](mods/One-Key-Light/INSTALL.md) · [Requirements](mods/One-Key-Light/COMPATIBILITY.md) · [Features](mods/One-Key-Light/FEATURES.md) · [Changelog](mods/One-Key-Light/CHANGELOG.md)
 
-## What's next
+## Unified Player Light Controls 2.0
 
-Auto NVG owner gameplay acceptance and stabilization → short Light Mods Discord showcase → Light package/credits review → **explicit publication authorization** → GitHub Releases.
+Keep light modes and tuning consistent across native controls and supported device dialogs. Link visible/IR channels to NVG state, with AUTO for supported weapon lights and lasers.
 
-See the [visual roadmap and checklist](ROADMAP.md), [showcase checklist](docs/LIGHT-SHOWCASE-CHECKLIST.md), and [release workflow](docs/RELEASE-WORKFLOW.md). Package downloads will appear only after the release gate clears.
+- Saved device modes and independent tuning.
+- Separate or NVG Linked weapon/headlamp routes.
+- Works alone or with One Key's gestures and menu.
 
-## Help and feedback
+**Public status: release held.**
 
-[Report a bug or request a feature](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/issues/new/choose). Include the exact mod/dependency/engine versions and reproducible steps. Remove personal paths and sensitive information from attachments.
+[Download status](mods/Unified-Player-Light-Controls/README.md#download) · [Install](mods/Unified-Player-Light-Controls/INSTALL.md) · [Requirements](mods/Unified-Player-Light-Controls/COMPATIBILITY.md) · [Features](mods/Unified-Player-Light-Controls/FEATURES.md) · [Changelog](mods/Unified-Player-Light-Controls/CHANGELOG.md)
 
-## Credits and permissions
+## In development
 
-[Credits](CREDITS.md) · [Release policy](RELEASE-POLICY.md) · [Documentation changes](CHANGELOG.md)
+| Project | Status |
+| --- | --- |
+| [Auto NVG](mods/Beefs-NVG-Automatic-Gain-Control/README.md) | v0.4 partially tested; v0.4.1 exposure correction planned; no download |
+| [Grenades Expanded](mods/Grenades-Expanded/README.md) | In development |
+| GEKF | Future framework; not implemented on the maintained engine base |
 
-Independent community project; not affiliated with or endorsed by GSC Game World or the GAMMA team. Upstream permissions and notices remain applicable. No blanket license is assigned to unaudited material.
+## Help
 
-The selected gameplay banner is pending placement at `assets/README-banner.png`; see [banner instructions](assets/README.md).
+[Installation guide](docs/INSTALLATION-GUIDE.md) · [Troubleshooting](docs/TROUBLESHOOTING.md) · [Report a bug](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/issues/new/choose) · [Mod index](docs/MOD-INDEX.md) · [Visual roadmap](ROADMAP.md)
+
+Showcase recording **complete** · Discord posting **pending**. [Showcase checklist](docs/LIGHT-SHOWCASE-CHECKLIST.md).
+
+[Credits](CREDITS.md) · [Release policy](RELEASE-POLICY.md) · [Redistribution review](docs/LIGHT-REDISTRIBUTION-REVIEW.md)
+
+Independent community project; no affiliation or endorsement by GSC Game World or the GAMMA team. The [approved screenshot banner](assets/README.md) awaits the exact selected image.

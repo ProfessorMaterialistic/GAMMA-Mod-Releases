@@ -1,66 +1,44 @@
 # Public roadmap
 
-[Home](README.md) · [Release workflow](docs/RELEASE-WORKFLOW.md)
+[Home](README.md) · [Showcase](docs/LIGHT-SHOWCASE-CHECKLIST.md) · [Release workflow](docs/RELEASE-WORKFLOW.md)
 
-Updated 2026-10-04. Priority order is a plan, not evidence of implementation or permission to publish.
+Updated 2026-10-04. Release status is separate from development evidence and explicit authorization.
 
 ```mermaid
 flowchart TD
-    A["Auto NVG v0.4 owner gameplay testing"] --> B["Auto NVG stabilization decision"]
-    B --> C["Record One Key + Unified Discord showcase"]
-    C --> D["Prepare Light Mods public packages / docs"]
-    D --> E{"PUBLICATION AUTHORIZATION"}
-    E -->|"Specific current-task release approval"| F["GitHub Releases"]
-    F --> G["Grenades Expanded"]
-    G --> H["GEKF historical recovery"]
-    H --> I["Lock GEKF spec"]
-    I --> J["GEKF v1.0 F13-F24"]
-    J --> K["GEKF v1.1 Mouse6-Mouse8"]
-    K --> L["GEKF v1.2 Action Ownership"]
-    L --> M["GEKF v1.3 optional gesture API"]
-    M --> N["GEKF v1.4 diagnostics / conflict inspector"]
+    L["One Key + Unified TESTED / FINAL-FOR-NOW"] --> V["Showcase clip recorded COMPLETE"]
+    V --> P["Public release preparation<br/>initial Light releases authorized"]
+    P --> C{"Bundled redistribution review<br/>pending clearance"}
+    C --> O["One Key 2.0 release PENDING"]
+    O --> U["Unified 2.0 release PENDING"]
+    U --> D["Discord post PENDING"]
+    A["Auto NVG v0.4 gameplay testing"] --> F["Exposure-control defects found"]
+    F --> X["v0.4.1 correction planned"] --> T["Owner retest"]
+    T --> R["Future release decision<br/>new explicit authorization required"]
+    G["Grenades Expanded<br/>in development"]
+    K["GEKF<br/>future / not implemented"]
 ```
 
-## Auto NVG acceptance and stabilization
+## Light releases and community
 
-- [ ] Owner verifies preserved Bodycam settings, camera/free aim, PiP, scopes and ordinary gameplay.
-- [ ] Verify coherent full-image response across sky, terrain, interiors and near/weapon geometry.
-- [ ] Gen 1 remains manual; Gen 2 slower/weaker with larger localized halo/washout/slower recovery; Gen 3 faster/stronger with tighter halo/less washout/faster recovery.
-- [ ] Check no obvious pumping; retest Classic Beef/Better, Tap Toggle, Hold Toggle, five gain positions, persistence, endpoint no-op and hold-repeat suppression on v0.4.
-- [ ] Exercise off/on, generation changes, save/load, level transition, practical resource/resolution recreation and a longer session.
-- [ ] Owner decides stabilization; no automatic TESTED promotion. Auto NVG is **NOT PUBLICLY RELEASED**.
+- [x] Both Light mods TESTED / FINAL-FOR-NOW for the accepted setup.
+- [x] Owner recorded showcase clip.
+- [x] Current task explicitly authorizes the two initial Light 2.0 releases.
+- [x] Inspect unchanged final package runtime, FOMOD and dependency file priority; prepare documentation and local archives.
+- [ ] Clear [exact bundled redistribution](docs/LIGHT-REDISTRIBUTION-REVIEW.md).
+- [ ] Publish One Key Light 2.0 and verify archive download.
+- [ ] Publish Unified Player Light Controls 2.0 and verify archive download.
+- [ ] Place exact approved [banner screenshot](assets/README.md).
+- [ ] Post clip to Discord; no completed-post evidence supplied.
 
-## Light Mods presentation and preparation
+## Auto NVG
 
-- [x] One Key Light 2.0 and Unified Player Light Controls 2.0: TESTED / FINAL-FOR-NOW for the accepted setup.
-- [x] Document features, controls, FOMOD options, dependencies, install/update/removal and verified file priority.
-- [ ] After Auto NVG reaches a stable stopping point, [record the short Discord showcase](docs/LIGHT-SHOWCASE-CHECKLIST.md).
-- [ ] Select clean final packages; reconcile final delivery metadata with these docs.
-- [ ] Clear [component redistribution review](docs/LIGHT-REDISTRIBUTION-REVIEW.md); finalize notices, credits and checksums.
-- [ ] Place the selected screenshot at `assets/README-banner.png`.
-- [ ] Obtain current explicit public-write and **specific release** authorization.
-- [ ] Create versioned GitHub Releases only after that authorization.
-- [ ] Share community announcement only with explicit posting authorization.
+v0.4 underwent gameplay testing. Core Bodycam migration and controls worked in the tested scope. Exposure-control defects remain; **v0.4.1 correction is planned**, followed by owner retest and a future release decision. **No public download is available.**
 
-The showcase does not add a TESTED gate. Keep implementation parked unless recording reveals a real bug.
+## Grenades and GEKF
 
-## Grenades Expanded
+Grenades remains in development; radial design remains IDEA until explicitly locked. GEKF is a future framework with DECIDED architecture, not implemented on the maintained engine base. It follows a stable engine baseline, historical recovery and locked implementation spec.
 
-- [ ] Complete remaining grenade/select/throw/crafting/lifecycle acceptance.
-- [ ] Finish radial design (IDEA) and explicitly lock the spec before implementation.
-- [ ] Validate/test any implementation; complete packaging/redistribution/authorization gates.
+## Evidence states
 
-## GEKF
-
-- [ ] Establish stable maintained Bodycam/MT baseline.
-- [ ] Recover actual historical documentation and engine diffs; distinguish old detection evidence from a finished binding system.
-- [ ] Lock the current implementation spec.
-- [ ] v1.0: first-class F13-F24 binding.
-- [ ] v1.1: Mouse6-Mouse8.
-- [ ] v1.2: transactional Action Ownership.
-- [ ] v1.3: optional gesture API.
-- [ ] v1.4: diagnostics / conflict inspector.
-
-## States
-
-IDEA = proposed; DECIDED = approved design; IMPLEMENTED = present in code; LOCALLY VALIDATED = applicable local checks passed; TESTED = actual owner gameplay evidence for the stated candidate/scope; FINAL-FOR-NOW = accepted tested state intentionally parked. PUBLIC RELEASE is a separate authorized distribution decision.
+IDEA → DECIDED → IMPLEMENTED → LOCALLY VALIDATED → TESTED → FINAL-FOR-NOW. Never infer later states. Public release is a separate distribution decision. Future public changes, including Light 2.0.1/2.1, require new explicit current-task authorization.

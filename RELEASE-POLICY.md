@@ -22,7 +22,7 @@ If private and public information conflict, STOP publication and reconcile again
 
 Before any specifically authorized package publication, establish the exact candidate's implementation, local checks and owner gameplay TESTED scope; review the package and dependencies; clear licenses/redistribution and credits; inspect contents for private data; finish install/update/uninstall/compatibility/known-issues documentation; and record version/source/checksum evidence where useful.
 
-TESTED and FINAL-FOR-NOW do not authorize a public write or release. Diagnostic labels do not establish stable status. Auto NVG v0.4 remains unreleased, with owner gameplay acceptance pending.
+TESTED and FINAL-FOR-NOW do not authorize a public write or release. Diagnostic labels do not establish stable status. Auto NVG v0.4 remains unreleased and NOT ACCEPTED after partial gameplay testing; exposure correction and owner retest are required.
 
 ## Naming and contents
 
@@ -33,3 +33,7 @@ Use a clean mod archive, versioned release notes, feature overview, required/opt
 Engine-dependent releases must identify the exact supported lineage and matching gamedata. Review binary redistribution separately; source/patch publication also needs authorization and permission review. No blanket repository license is assigned before auditing the actual materials.
 
 See [release workflow](docs/RELEASE-WORKFLOW.md) and [Light component review](docs/LIGHT-REDISTRIBUTION-REVIEW.md).
+
+## 2026-10-04 initial Light publication
+
+The owner explicitly authorized initial One Key Light 2.0 and Unified Player Light Controls 2.0 publication in this task. Redistribution review currently holds both uploads. No other mod, engine binary or PDB is authorized. Future public changes, including 2.0.1/2.1, still require new current-task authorization.

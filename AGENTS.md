@@ -31,3 +31,7 @@ If private and public information conflict, STOP publication and reconcile again
 - Review every staged path and the public privacy scan before an authorized commit/push. Keep Auto NVG and Grenades unreleased until their separate gates are satisfied.
 - Never launch or change live GAMMA/MO2 as a side effect of documentation work.
 - If sandbox Git HTTPS crashes, stop remote retries, preserve local work and report path, branch, HEAD, status and the manual `git -C <repo-path> push -u origin HEAD` command. Do not reset, reclone, repair Git, rewrite history or force-push.
+
+## 2026-10-04 initial Light task boundary
+
+The current reconciliation task explicitly authorizes initial One Key Light 2.0 and Unified Player Light Controls 2.0 public documentation/merges/pushes and, after clearance, tags/releases/clean assets. Both uploads are held for exact bundled redistribution review. No other mod, engine binary or PDB is authorized. Future public actions and Light 2.0.1/2.1/etc updates require new explicit authorization in that future CURRENT task; this historical task note never grants continuing permission.

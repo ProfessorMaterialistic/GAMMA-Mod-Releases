@@ -1,11 +1,13 @@
-# Beef's NVG Automatic Gain Control
+# Beef's NVG Automatic Gain Control / Auto NVG
 
-**NOT PUBLICLY RELEASED. No download is available from this repository.**
+**Testing / unreleased. NOT PUBLICLY RELEASED.**
 
-The v0.4 candidate explores coherent full-image NVG exposure and generation-aware gain/halo behavior. It is IMPLEMENTED / LOCALLY VALIDATED and deployed for **owner gameplay acceptance; NOT TESTED**.
+- v0.4 underwent gameplay testing.
+- Core Bodycam migration and controls worked in the tested scope.
+- Exposure-control defects remain; the whole v0.4 candidate is not accepted.
+- v0.4.1 correction is planned, followed by owner retest.
+- **No public download is currently available.**
 
-The maintained direction uses normal/public **Bodycam/MT**. Immersive Identification custom-executable compatibility was intentionally dropped for this v0.4 path. This is not a promise of compatibility across arbitrary engine builds.
+A future release requires acceptance, package/redistribution review and new explicit publication authorization. This status page supplies no engine binary, PDB, diagnostic package or unreleased source experiment.
 
-The next gate is owner gameplay acceptance of the Bodycam baseline, full-image coherence, Gen 1 manual behavior, Gen 2/3 differences, input regressions, transitions and stability. Successful testing, package/dependency review, redistribution clearance and **specific explicit release authorization** are required before any public release.
-
-See the [roadmap](../../ROADMAP.md) and [release policy](../../RELEASE-POLICY.md). This page contains no engine build, diagnostic download or installation instructions for an unreleased candidate.
+[Roadmap](../../ROADMAP.md) · [Release policy](../../RELEASE-POLICY.md)

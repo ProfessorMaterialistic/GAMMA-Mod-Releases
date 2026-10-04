@@ -1,64 +1,79 @@
 # One Key Light 2.0
 
-Control installed player lights with **Tap, Double Tap, Hold**, or an on-screen **Quick Light Menu**. Use it alone for OFF/ON, or with Unified for advanced weapon/laser modes and NVG linking.
+## Overview
 
-**Development: TESTED / FINAL-FOR-NOW. Public: release preparation; no GitHub download yet.** Owner acceptance was recorded 2026-10-01 for the accepted setup. Public release/redistribution approval remains separate.
+Control installed player lights with one key and a compact on-screen menu. Each Light mod works independently. Use matching 2.0 companions and installer choices when combining them.
 
-[Install / update / remove](INSTALL.md) · [Requirements / MO2 order / compatibility](COMPATIBILITY.md) · [Changelog](CHANGELOG.md) · [Credits](CREDITS.md)
+**TESTED / FINAL-FOR-NOW** for the accepted setup, owner confirmation recorded 2026-10-01. **Public release held for bundled redistribution review.**
 
-## Features
+[Features / configuration](FEATURES.md) · [Install / update / remove](INSTALL.md) · [Compatibility](COMPATIBILITY.md) · [Changelog](CHANGELOG.md) · [Credits](CREDITS.md)
 
-- Assign installed Headlamp, UTLF White, UTLF IR, Laser or IR Headlamp actions to three gestures; None and Quick Menu are also available.
-- Quick Menu with device state, current output/route, real battery information when available, and unavailable-device locks.
-- Standalone OFF/ON without Unified. With Unified, weapon/laser OFF/ON/AUTO and shared explicit Separate/NVG Linked settings.
-- Normal and IR headlamp switching uses the existing GAMMA animations. Appropriate physical switch sounds come from the backend; One Key adds no duplicate sound.
-- Optional manual vanilla Torch binding clear/restore with saved primary/secondary slots and conflict checks.
+## Feature highlights
 
-Feature integrations need their separately installed dependencies and matching FOMOD options. Missing integrations are not installed by assigning an action. See the [complete dependency table](COMPATIBILITY.md).
+- Tap / Double Tap / Hold with configurable assignments and timing.
+- Quick Light Menu with device states, themes, locks and text fallback.
+- Standalone OFF/ON; optional Unified AUTO and NVG linking.
+- Existing headlamp animations and one backend click per supported manual switch.
 
-## Default controls
+## Requirements
 
-| Input | Default result |
+| Mod / host | Required? | Purpose | Load relationship | Link |
+| --- | --- | --- | --- | --- |
+| Anomaly / GAMMA, MCM | Yes | Host and configuration | Before Light files | [Sources](../../docs/DEPENDENCIES.md) |
+| MT-TEST 2026.09.07 / xrCore 10074 + matching gamedata | Supported baseline | DX11-AVX, AVX CPU | Engine instructions; gamedata before Light | [Engine source](https://github.com/themrdemonized/xray-monolith) |
+| GAMMA 3D PDA and Headlamp Animations | Yes | Headlamp presentation | Light animation override wins | [Sources](../../docs/DEPENDENCIES.md) |
+
+## Optional integrations
+
+UTLF 1.0.1 for weapon lighting; Soy Adjustable 1.0 for its headlamp backend; Soy UTLF IR 1.03 for weapon IR; Soy IR Headlamps 1.3.0 plus illuminator for IR headlamp; Laser Settings 2.7 for lasers; MGI/MGUI 0.3.4 for optional GUI launchers; the matching companion for combined controls.
+
+These are **feature-conditional and separately installed**. [Complete requirements, source links and limitations](COMPATIBILITY.md).
+
+## Quick install
+
+1. Install the supported host and chosen dependencies separately.
+2. Once released, download the versioned archive and install through MO2's archive / FOMOD flow.
+3. Match backend/integration choices in both Light installers, enable the mod and let its files override its dependencies.
+4. Configure MCM and verify output with the intended equipment.
+
+[Full installation guide](INSTALL.md) · [Verified MO2 priority](COMPATIBILITY.md#verified-mo2-file-priority).
+
+## Controls / behavior
+
+| Input | Action |
 | --- | --- |
 | Mouse 5 Tap | Headlamp toggle |
-| Mouse 5 Double Tap | UTLF White toggle, when installed |
-| Mouse 5 Hold | Laser toggle, when installed |
+| Mouse 5 Double Tap | UTLF White toggle when installed |
+| Mouse 5 Hold | Laser toggle when installed |
 | Shift + Mouse 5 | Quick Light Menu |
 | Dedicated menu key | Unassigned until configured |
 
-Tap waits for the **225 ms Double Tap Window** to resolve. Hold fires at **300 ms**, once per gesture, rather than repeatedly cycling while held. A completed Hold does not also fire Tap. MCM permits a 100–500 ms double window and 150–1000 ms hold threshold. Choose a practical main key in MCM; do not assume unverified extended keys are bindable.
+Normal and IR headlamps support OFF/ON. Supported weapon lights and laser gain AUTO with Unified. One Key standalone uses OFF/ON. IR needs appropriate equipment/power and deployed NVGs.
 
-Without Unified, actions toggle OFF/ON. With Unified, default **Smart ON/OFF** toggles based on current output: an emitting AUTO becomes OFF; a hidden AUTO becomes ON. Optional **OFF → ON → AUTO** cycles modes for supported weapon/laser devices. All headlamps still alternate OFF/ON.
+## Linked / AUTO behavior
 
-## Quick Menu controls
+Unified links White/IR weapon light or Normal/IR headlamp explicitly in MCM. Visible lighting routes with NVGs stowed; IR routes with NVGs deployed. Unavailable IR fails dark. Independent modes/tuning survive link/unlink. Gestures do not silently enable links. AUTO gates supported weapon/laser output using saved aim policy; headlamp AUTO is absent.
 
-Move the mouse to a sector; left click acts on it. Escape or the center closes/cancels. Tap-open menus can close with their opening key.
+## Configuration
 
-The **selection** setting offers:
+Use the native MCM pages and supported device dialogs. [Detailed controls, timing, menu options and configuration](FEATURES.md). Tap waits for the 225 ms double window; Hold fires once at 300 ms by default.
 
-- **Tap: click / Hold: release** (default): click for a tap-open menu, select the hovered action on releasing a held opener.
-- **Left click only (release closes)**: hold the opener, click to change lights; release closes without another selection.
-- **Release Opening Key**: select the hovered action when the opening key is released.
+## One Key / Unified integration
 
-**Radial light selection** offers Single radial mode cycling, Two-step choose-a-mode, or Original quick toggle. The two-step picker offers only modes supported by the selected device. Explicit menu mode selection is independent of gesture preference. Without Unified, advanced mode controls remain unavailable.
+Each works independently; no third mandatory core. When combining them, use matching 2.0 versions and FOMOD choices. Either companion order is valid when shared files match and both override their selected dependencies.
 
-Default right click cycles backward / chooses the highlighted mode. Alternatives close the radial, act like left click, or toggle OFF / last ON-or-AUTO. Linked device aliases fold into one menu action; **Hide Gesture-Bound Actions** can remove duplicate gesture targets. Movement while open follows normal bindings when enabled.
+## Update and uninstall
 
-## MCM configuration
+Close the game, replace the old MO2 entry with the matched version/options and retain settings. Restore any Torch binding cleared by One Key before removing its binding owner. [Detailed update/removal](INSTALL.md).
 
-| Page | Settings |
-| --- | --- |
-| Controls | Enable, Main Light Control Key, explicit Weapon Lights/Headlamps linking with Unified, Tap/Double Tap/Hold assignments, timing, Gesture Behavior with Unified |
-| Quick Menu | Dedicated key, modifier shortcut (Shift/Ctrl/Alt), selection, radial behavior/right click/movement/hiding, size/opacity, theme/icons/labels, state/battery/lock display and per-action visibility |
-| Anomaly Torch Binding | Clear / Restore and current binding/conflict/persistent-disable status |
-| Compatibility | Detected companion and backend integrations |
+## Compatibility and known issues
 
-Appearance includes **25 themes**, Tactical or Minimal icons, and Icon + Text / Icon Only / Text Only labels. Missing icon initialization falls back to text. State indicator choices include words, marks or colored dots. Battery percentages are shown only when a backend supplies real charge; they are not fabricated for every device.
+No unresolved gameplay defect is recorded for the accepted setup. Other engine variants and every optional installer configuration are not separately gameplay certified. Native/G2X beam tuning uses separate presets. [Compatibility details](COMPATIBILITY.md) · [Troubleshooting](../../docs/TROUBLESHOOTING.md).
 
-Apply commits MCM choices; Reset/Cancel discard pending changes. The link selectors edit Unified's shared state. Selecting an action or using a gesture does **not** silently change link mode.
+## Download
 
-## Limits, issues and help
+**Not publicly released.** Initial 2.0 publication is authorized in the 2026-10-04 task, but bundled component clearance is incomplete. No download archive or release tag has been published. [Release status / future downloads](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/releases) · [Component review](../../docs/LIGHT-REDISTRIBUTION-REVIEW.md).
 
-Normal/IR/linked headlamps are OFF/ON only. Native/G2X beam tuning is limited to the separate preset setup. IR needs suitable equipment and deployed NVGs; linked IR failure remains dark rather than switching to visible light. Other engine variants and all optional configurations are not automatically covered by accepted gameplay evidence.
+## Credits
 
-No unresolved gameplay defect is recorded for the accepted setup. See [compatibility](COMPATIBILITY.md) for scope and [troubleshooting](../../docs/TROUBLESHOOTING.md) for missing devices, file conflicts or bindings. [Report reproducible bugs](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/issues/new/choose).
+Bling / ProfessorMaterialistic, UTLF, Soy, Borksy, GAMMA animation contributors and configuration/UI contributors. [Full attribution](CREDITS.md).

@@ -4,7 +4,7 @@ title: "[Bug] "
 body:
   - type: markdown
     attributes:
-      value: "Use exact versions. Remove personal paths, usernames, secrets and unrelated private information from attachments. This hub currently has no download releases; name any separately obtained package accurately."
+      value: "Use exact versions. Remove personal paths, usernames, secrets and unrelated private information from attachments. Light public archive uploads are currently held; name any separately obtained package accurately."
   - type: dropdown
     id: mod
     attributes:

@@ -2,7 +2,7 @@
 
 [Home](../README.md) · [Troubleshooting](TROUBLESHOOTING.md)
 
-There are no download releases in this repository yet. These instructions explain the installation flow for a future authorized package; they do not supply a package or approve a release.
+Light public archive uploads are held for bundled redistribution review. These instructions describe the prepared installer flow; [check mod download status](MOD-INDEX.md) before installing.
 
 1. Open the individual mod's requirements and compatibility page. Verify the exact supported engine/dependency versions.
 2. Obtain the specifically versioned archive from its future GitHub Release. Check SHA-256 if provided. Do not use an internal test build as a stable release.

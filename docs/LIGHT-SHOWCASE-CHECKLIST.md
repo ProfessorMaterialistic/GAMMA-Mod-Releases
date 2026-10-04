@@ -1,17 +1,10 @@
-# Light Mods Discord showcase
+# Light Mods showcase
 
-Record after Auto NVG v0.4 testing reaches a stable stopping point. One Key Light 2.0 and Unified Player Light Controls 2.0 already remain **TESTED / FINAL-FOR-NOW**; this is a presentation milestone.
+One Key Light 2.0 and Unified Player Light Controls 2.0 remain **TESTED / FINAL-FOR-NOW**. The owner reports a short showcase clip has been recorded.
 
-- [ ] Use clean normal gameplay with no debug overlays or personal information.
-- [ ] Show One Key's basic operation: Tap, Double Tap, Hold.
-- [ ] Show the Quick Light Menu and an easy-to-read state change.
-- [ ] Show UTLF white light, UTLF IR and laser with the appropriate equipment installed.
-- [ ] Show Unified linked NVG routing and AUTO aim behavior.
-- [ ] Include normal/IR headlamp if useful for clarity.
-- [ ] Keep headlamp animations visible and switch sounds audible where practical.
-- [ ] Use a simple shot sequence understandable without narration.
-- [ ] Keep the clip short enough for convenient Discord viewing.
-- [ ] Review the clip for an actual bug; reopen implementation only if one appears.
-- [ ] Share the finished clip only when posting is explicitly authorized.
+- [x] **RECORD SHOWCASE CLIP: COMPLETE** — owner report, 2026-10-04.
+- [ ] **POST TO DISCORD: PENDING** — no posting evidence supplied.
+- [ ] Confirm the clip is ready for sharing and contains no unwanted personal/debug overlays; detailed clip review was not independently reported.
+- [ ] Include accurate documentation/download status when sharing; public archive uploads are currently held.
 
-Suggested sequence: one stable scene for gestures/menu, then one NVG route change and one aim/AUTO change. Do not turn recording into a new acceptance campaign or announce a GitHub download that does not exist.
+Recording is a presentation/community milestone, not additional gameplay testing. No claim is made that every proposed shot or device appears in the recorded clip. Do not reopen implementation without a real bug. External posting requires explicit messaging authorization; this task did not send a Discord message.
