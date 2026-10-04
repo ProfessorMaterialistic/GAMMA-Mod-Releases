@@ -1,0 +1,88 @@
+name: Bug report
+description: Report a reproducible mod or compatibility problem.
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: "Use exact versions. Remove personal paths, usernames, secrets and unrelated private information from attachments. This hub currently has no download releases; name any separately obtained package accurately."
+  - type: dropdown
+    id: mod
+    attributes:
+      label: Mod
+      options:
+        - One Key Light
+        - Unified Player Light Controls
+        - Beef's NVG Automatic Gain Control (unreleased)
+        - Grenades Expanded (in development)
+        - Documentation / other
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Mod version and package source
+      description: Exact version/channel and where you obtained it; no private local paths.
+    validations:
+      required: true
+  - type: input
+    id: gamma
+    attributes:
+      label: GAMMA version
+    validations:
+      required: true
+  - type: input
+    id: anomaly
+    attributes:
+      label: Anomaly version (if relevant)
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependency versions and FOMOD choices
+      description: Include UTLF, Soy headlamp/IR, Laser Settings, MCM/MGI or other relevant integrations.
+    validations:
+      required: true
+  - type: input
+    id: engine
+    attributes:
+      label: Engine version and executable variant (if relevant)
+      description: Include build/date/core identity and DX11-AVX or other variant; avoid absolute paths.
+  - type: textarea
+    id: order
+    attributes:
+      label: Relevant MO2 left-pane order and file conflicts
+      description: List the relevant entries in priority order; identify the winning mod for conflicting files.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Include equipment, NVG/link/mode state, control actions and frequency.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sanitized logs / screenshots
+      description: Relevant excerpts only. Do not upload full profiles, backup archives, tokens or private diagnostics.
+  - type: dropdown
+    id: save
+    attributes:
+      label: Save context
+      options:
+        - Current save
+        - New save
+        - Both
+        - Not relevant / not checked

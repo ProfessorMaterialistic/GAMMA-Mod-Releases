@@ -1,0 +1,38 @@
+name: Feature request
+description: Describe a useful player-facing improvement.
+title: "[Feature] "
+body:
+  - type: dropdown
+    id: mod
+    attributes:
+      label: Mod
+      options:
+        - One Key Light
+        - Unified Player Light Controls
+        - Beef's NVG Automatic Gain Control
+        - Grenades Expanded
+        - GEKF / framework
+        - Documentation / other
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Requested behavior
+      description: Explain what the player should be able to do.
+    validations:
+      required: true
+  - type: textarea
+    id: reason
+    attributes:
+      label: Player-facing reason
+      description: What problem does this solve? Include a concrete example.
+    validations:
+      required: true
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Compatibility considerations
+      description: Relevant dependencies, controls, engine assumptions or alternatives; say unknown if not established.
+    validations:
+      required: true

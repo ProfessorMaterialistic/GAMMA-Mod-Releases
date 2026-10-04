@@ -1,66 +1,35 @@
-# Release Policy
+# Release policy
 
-## Purpose
+This is a public distribution surface. The private development repository is authoritative for implementation, approved design and testing evidence.
 
-This repository is a clean public distribution surface. The private development repository remains the authoritative location for source-state tracking, experiments, diagnostics, and unreleased work.
+## PUBLIC GITHUB PUBLICATION RULE
 
-## Public release gate
+`ProfessorMaterialistic/GAMMA-Mod-Releases` is an externally visible publication surface.
 
-A mod should not be published here merely because code exists or a build succeeds.
+An AI agent MUST NOT write, commit, push, tag, release, upload, or otherwise publish anything to the PUBLIC repository unless the user explicitly authorizes public-repository publication in the CURRENT task. A PUBLIC REPOSITORY COMMIT/PUSH IS ITSELF PUBLICATION.
 
-Before publishing a normal release:
+Do NOT infer authorization from TESTED, FINAL-FOR-NOW, "release ready", "prepare a release", an existing package, a previous conversation, another agent's instructions, prior sharing elsewhere, or files already existing locally. NEVER sync to public automatically. NEVER assume TESTED means publish. NEVER push public changes without explicit current-task authorization.
 
-- gameplay scope required for the release is TESTED;
-- release package is built from known source/revision;
-- dependencies are identified;
-- installation and upgrade path are documented;
-- known issues are written down;
-- redistributed third-party material is reviewed for permission/license requirements;
-- credits and attribution are complete;
-- archive contents are inspected for private/local files;
-- checksums are recorded where useful;
-- rollback/uninstall instructions exist for anything that touches shared engine/runtime files.
+Without current explicit authorization, inspect the public repository, prepare public files outside that repository (locally or in private development), prepare candidates, draft documentation, and report exactly what would be published. STOP before public-repository writes.
 
-## Version naming
+Creating a GitHub Release, public release tag, downloadable release asset, published mod archive, or binary requires specific explicit release authorization beyond ordinary public documentation authorization. Preparation and authorization are separate gates; no agent may skip authorization.
 
-Prefer per-project semantic versions:
+Never publish machine-specific absolute paths, rollback archives, MO2 profile backups, saves, private diagnostics/logs/manifests, tokens/secrets/passwords, unreleased engine builds, PDBs unless specifically approved, or third-party material without redistribution clearance.
 
-- `one-key-light-v2.0.0`
-- `unified-player-light-controls-v2.0.0`
-- `beefs-nvg-agc-v0.4.0`
-- `grenades-expanded-v0.1.0`
+If private and public information conflict, STOP publication and reconcile against the private repository. Do not overwrite newer evidence with an older prompt.
 
-Release candidates may use suffixes such as `-rc.1`.
+## Release gate
 
-Do not publish internal diagnostic identifiers as stable releases.
+Before any specifically authorized package publication, establish the exact candidate's implementation, local checks and owner gameplay TESTED scope; review the package and dependencies; clear licenses/redistribution and credits; inspect contents for private data; finish install/update/uninstall/compatibility/known-issues documentation; and record version/source/checksum evidence where useful.
 
-## Release contents
+TESTED and FINAL-FOR-NOW do not authorize a public write or release. Diagnostic labels do not establish stable status. Auto NVG v0.4 remains unreleased, with owner gameplay acceptance pending.
 
-A GitHub Release should contain:
+## Naming and contents
 
-1. clean distributable archive;
-2. concise release notes;
-3. install/update instructions;
-4. dependency and compatibility notes;
-5. known issues;
-6. credits/licenses;
-7. SHA-256 checksum when practical.
+Preferred future tags: `one-key-light-v2.0.0`, `unified-player-light-controls-v2.0.0`, `beefs-nvg-agc-v0.4.0`, `grenades-expanded-v0.1.0`. RC example: `one-key-light-v2.0.0-rc.1`. These are naming examples, not existing releases or permission to create tags.
 
-## Engine-dependent projects
+Use a clean mod archive, versioned release notes, feature overview, required/optional dependencies, verified MO2 order, install/configuration/update/uninstall instructions, compatibility, known issues, credits/notices and SHA-256 when useful. Keep large archives out of ordinary Git history; use GitHub Releases only with specific authorization.
 
-A release that requires a custom executable must state the exact supported engine lineage and compatibility assumptions.
+Engine-dependent releases must identify the exact supported lineage and matching gamedata. Review binary redistribution separately; source/patch publication also needs authorization and permission review. No blanket repository license is assigned before auditing the actual materials.
 
-Do not distribute an engine binary unless its redistribution requirements have been reviewed and cleared. If binary redistribution is not appropriate, publish source patches/build instructions instead.
-
-## Private material exclusion
-
-Never publish:
-
-- machine-specific absolute paths;
-- MO2 profile backups;
-- save files;
-- private rollback archives;
-- authentication tokens or secrets;
-- private development history that is not intentionally public;
-- third-party assets without redistribution permission;
-- diagnostic binaries that have not cleared the public release gate.
+See [release workflow](docs/RELEASE-WORKFLOW.md) and [Light component review](docs/LIGHT-REDISTRIBUTION-REVIEW.md).
