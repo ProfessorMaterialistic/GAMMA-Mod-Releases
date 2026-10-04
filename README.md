@@ -1,68 +1,39 @@
 # GAMMA Mod Releases
 
-Public releases, installation notes, compatibility information, and user-facing documentation for my **S.T.A.L.K.E.R. Anomaly / GAMMA** mod projects.
+**Player light controls, NVG projects, and grenade tools for S.T.A.L.K.E.R. Anomaly / GAMMA.**
 
-> **Release hub only.** Development work, experiments, local diagnostics, private test builds, rollback material, and unreleased engine work are kept out of this repository.
+This is the public release hub: features, requirements, installation, compatibility, and community support. Development remains in the private repository.
 
-## Current release status
+**No GitHub download releases are published here yet.** The Light Mods are gameplay **TESTED / FINAL-FOR-NOW** and in public-release preparation. Testing does not authorize publication.
 
-There are **no public download releases published from this repository yet**. Projects are moved here only after they have passed the appropriate gameplay testing, packaging, provenance, and redistribution checks.
-
-| Project | Public status | Notes |
+| Mod | What it does | Current public status |
 | --- | --- | --- |
-| **One Key Light 2.0** | Release preparation | Gameplay-tested / final-for-now in private development. Public packaging and redistribution review still required. |
-| **Unified Player Light Controls 2.0** | Release preparation | Gameplay-tested / final-for-now in private development. Public packaging and redistribution review still required. |
-| **Beef's NVG Automatic Gain Control** | Testing | v0.4 Bodycam diagnostic is deployed for owner gameplay testing; not approved for public release yet. |
-| **Grenades Expanded** | Development | Core is locally validated and partially gameplay-tested; public release gate not yet complete. |
-| **GEKF / Universal Input & Action Framework** | Future | Architecture approved; implementation has not started on the maintained engine baseline. |
+| [One Key Light 2.0](mods/One-Key-Light/README.md) | Tap, Double Tap, Hold, and a Quick Light Menu | Release preparation; no public download |
+| [Unified Player Light Controls 2.0](mods/Unified-Player-Light-Controls/README.md) | Saved light modes, NVG linking, and weapon/laser AUTO | Release preparation; no public download |
+| [Beef's NVG Automatic Gain Control](mods/Beefs-NVG-Automatic-Gain-Control/README.md) | Generation-aware automatic NVG exposure | **NOT PUBLICLY RELEASED**; owner acceptance pending |
+| [Grenades Expanded](mods/Grenades-Expanded/README.md) | Gesture selection and quick throw of existing grenades | **IN DEVELOPMENT**; radial menu remains IDEA |
+| GEKF / Universal Input & Action Framework | Planned input and action infrastructure | DECIDED architecture; not implemented on the maintained base |
 
-## What will be published here
+## Start here
 
-When a project clears its release gate, its public release will include only the material that is actually approved for redistribution:
+[Mod index](docs/MOD-INDEX.md) · [Installation guide](docs/INSTALLATION-GUIDE.md) · [Troubleshooting](docs/TROUBLESHOOTING.md)
 
-- packaged mod files;
-- installation and upgrade instructions;
-- versioned changelog;
-- compatibility notes;
-- known issues;
-- credits and required upstream attribution;
-- checksums where useful;
-- rollback / uninstall instructions when the mod changes shared runtime files.
+Each Light Mod works independently. Using both adds gesture/menu control to Unified's advanced light modes. Their pages explain which dependencies are required for each feature and which installer options to choose.
 
-Private development history and machine-specific files will not be mirrored here.
+## What's next
 
-## Release channels
+Auto NVG owner gameplay acceptance and stabilization → short Light Mods Discord showcase → Light package/credits review → **explicit publication authorization** → GitHub Releases.
 
-- **Stable** — owner gameplay-tested and suitable for normal use.
-- **Release Candidate** — feature-complete candidate that still needs broader confirmation.
-- **Diagnostic / Test** — normally remains private and is not a public release channel unless explicitly approved.
+See the [visual roadmap and checklist](ROADMAP.md), [showcase checklist](docs/LIGHT-SHOWCASE-CHECKLIST.md), and [release workflow](docs/RELEASE-WORKFLOW.md). Package downloads will appear only after the release gate clears.
 
-## Planned public workflow
+## Help and feedback
 
-```mermaid
-flowchart LR
-    A[Private Development] --> B[Implemented]
-    B --> C[Locally Validated]
-    C --> D[Owner Gameplay Testing]
-    D --> E{Release Gate}
-    E -->|Pass| F[Package + Credits + Checksums]
-    E -->|Fail| A
-    F --> G[GitHub Release]
-    G --> H[Discord Showcase / Feedback]
-```
+[Report a bug or request a feature](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/issues/new/choose). Include the exact mod/dependency/engine versions and reproducible steps. Remove personal paths and sensitive information from attachments.
 
-See the [public roadmap and checklist](ROADMAP.md) for the current release-facing plan.
+## Credits and permissions
 
-## Installation philosophy
+[Credits](CREDITS.md) · [Release policy](RELEASE-POLICY.md) · [Documentation changes](CHANGELOG.md)
 
-Each release will document its own requirements and installation order. Do not assume that files from one project can be copied into another or that a custom engine binary is interchangeable with another engine build.
+Independent community project; not affiliated with or endorsed by GSC Game World or the GAMMA team. Upstream permissions and notices remain applicable. No blanket license is assigned to unaudited material.
 
-For engine-dependent releases, the release notes will identify the exact supported engine lineage and required compatibility state.
-
-## Issues and feedback
-
-Once public releases are available, use this repository's Issues page for reproducible release bugs and compatibility reports. Include the mod version, GAMMA/Anomaly version, relevant dependencies, and steps to reproduce.
-
-## Disclaimer
-
-This is an independent community modding project and is not affiliated with or endorsed by GSC Game World or the GAMMA team. Upstream licenses, permissions, and attribution requirements remain applicable to any redistributed material.
+The selected gameplay banner is pending placement at `assets/README-banner.png`; see [banner instructions](assets/README.md).
