@@ -1,0 +1,9 @@
+# Release assets are uploaded only through specifically authorized GitHub Releases.
+*.7z
+*.zip
+*.rar
+*.exe
+*.dll
+*.pdb
+*.log
+__pycache__/

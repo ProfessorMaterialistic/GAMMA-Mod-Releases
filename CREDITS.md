@@ -1,20 +1,14 @@
-# Credits and Attribution
+# Credits
 
-Project-specific credits will be finalized with each public release.
+- **Bling / ProfessorMaterialistic** - One Key Light and Unified Player Light Controls project work.
+- **GSC Game World**, **Anomaly contributors**, and the **GAMMA team/community** - game and modding environment; no affiliation or endorsement implied.
+- **MichaelHochriegl / Universal Tactical Light Framework** - weapon-light framework and upstream scripts; [official project](https://github.com/MichaelHochriegl/Stalker.Anomaly.Universal.Tactical.Light.Framework).
+- **Soy** - Adjustable Headlamps, UTLF IR Mode and IR Headlamps integrations.
+- **Borksy** - Laser Settings integration.
+- **RavenAscendant / MCM**, **MGI/MGUI contributors**, and the **GAMMA 3D PDA and Headlamp Animations authors** - configuration, optional GUI launchers and presentation. Exact notices/component attribution remain pending bundled-file clearance; both archive uploads are held.
 
-## General upstream ecosystem
+See [One Key credits](mods/One-Key-Light/CREDITS.md), [Unified credits](mods/Unified-Player-Light-Controls/CREDITS.md) and the [component redistribution review](docs/LIGHT-REDISTRIBUTION-REVIEW.md). Preserve upstream credit chains and asset-specific notices; complete dependency packages are installed separately.
 
-These mods are built for the S.T.A.L.K.E.R. Anomaly / GAMMA ecosystem and may integrate with or build on work from other community projects.
+The selected banner will use the owner's GAMMA screenshot with only the selected subtle enhancement. Its exact file remains pending; no alternative artwork is included.
 
-Each release must identify its actual dependencies and preserve the upstream authors' requested attribution and license terms.
-
-## Before publishing a release
-
-- verify every bundled third-party file;
-- identify its source project/author;
-- confirm whether redistribution is permitted;
-- include required license text or notices;
-- distinguish original project code from upstream-derived material;
-- do not assume that private/local use permission equals redistribution permission.
-
-No blanket license is assigned to all repository contents until the component-specific licensing picture is complete.
+No blanket repository license is assigned before auditing actual materials. Attribution is not a substitute for redistribution permission. Auto NVG and Grenades package-specific credits will accompany any separately approved release.

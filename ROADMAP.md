@@ -1,89 +1,44 @@
-# Public Release Roadmap
+# Public roadmap
 
-This is the **public-facing release map**. It intentionally does not expose private implementation notes, local paths, unreleased binaries, or internal rollback material.
+[Home](README.md) · [Showcase](docs/LIGHT-SHOWCASE-CHECKLIST.md) · [Release workflow](docs/RELEASE-WORKFLOW.md)
 
-## Visual map
+Updated 2026-10-04. Release status is separate from development evidence and explicit authorization.
 
 ```mermaid
 flowchart TD
-    A[Auto NVG v0.4 gameplay test] --> B{Stable enough to accept engine baseline?}
-    B -->|No| A1[Fix / retest privately]
-    A1 --> A
-    B -->|Yes| C[Record short One Key Light + Unified Lights showcase clip]
-    C --> D[Prepare Light Mods public release packages]
-    D --> E[Credits / licensing / install docs / checksums]
-    E --> F[Publish Light Mods release]
-    F --> G[Grenades Expanded release work]
-    G --> H[GEKF historical recovery + locked spec]
-    H --> I[GEKF v1.0 F13-F24]
-    I --> J[GEKF v1.1 Mouse6-Mouse8]
-    J --> K[GEKF v1.2 Action Ownership]
-    K --> L[GEKF v1.3 Gesture API]
-    L --> M[GEKF v1.4 Diagnostics / conflict inspector]
+    L["One Key + Unified TESTED / FINAL-FOR-NOW"] --> V["Showcase clip recorded COMPLETE"]
+    V --> P["Public release preparation<br/>initial Light releases authorized"]
+    P --> C{"Bundled redistribution review<br/>pending clearance"}
+    C --> O["One Key 2.0 release PENDING"]
+    O --> U["Unified 2.0 release PENDING"]
+    U --> D["Discord post PENDING"]
+    A["Auto NVG v0.4 gameplay testing"] --> F["Exposure-control defects found"]
+    F --> X["v0.4.1 correction planned"] --> T["Owner retest"]
+    T --> R["Future release decision<br/>new explicit authorization required"]
+    G["Grenades Expanded<br/>in development"]
+    K["GEKF<br/>future / not implemented"]
 ```
 
-## Immediate checklist
+## Light releases and community
 
-### 1. Auto NVG v0.4 — gameplay acceptance
-- [ ] Confirm Bodycam saved settings are intact.
-- [ ] Confirm normal camera / free aim behavior.
-- [ ] Confirm PiP / scopes behave correctly.
-- [ ] Confirm full-image NVG exposure is coherent across sky, terrain, interiors, and weapon geometry.
-- [ ] Confirm Gen 1 remains manual.
-- [ ] Confirm Gen 2 is slower/weaker with stronger localized halo/washout.
-- [ ] Confirm Gen 3 is faster/stronger with tighter halo and better recovery.
-- [ ] Retest input styles and gain positions on the exact v0.4 candidate.
-- [ ] Exercise off/on, generation changes, save/load, level transitions, and a longer session.
-- [ ] Decide whether v0.4 is stable enough to become the maintained engine baseline.
+- [x] Both Light mods TESTED / FINAL-FOR-NOW for the accepted setup.
+- [x] Owner recorded showcase clip.
+- [x] Current task explicitly authorizes the two initial Light 2.0 releases.
+- [x] Inspect unchanged final package runtime, FOMOD and dependency file priority; prepare documentation and local archives.
+- [ ] Clear [exact bundled redistribution](docs/LIGHT-REDISTRIBUTION-REVIEW.md).
+- [ ] Publish One Key Light 2.0 and verify archive download.
+- [ ] Publish Unified Player Light Controls 2.0 and verify archive download.
+- [ ] Place exact approved [banner screenshot](assets/README.md).
+- [ ] Post clip to Discord; no completed-post evidence supplied.
 
-### 2. Light Mods — short Discord showcase
-After Auto NVG testing reaches a stable stopping point:
+## Auto NVG
 
-- [ ] Record a short clean in-game clip of **One Key Light 2.0**.
-- [ ] Show Tap / Double Tap / Hold behavior clearly.
-- [ ] Show the quick-light menu if appropriate.
-- [ ] Show UTLF white light / IR / laser behavior.
-- [ ] Show **Unified Player Light Controls 2.0** behavior.
-- [ ] Keep the clip short enough for easy Discord viewing.
-- [ ] Verify the recording does not expose debugging overlays or unrelated broken behavior.
-- [ ] Post/share the clip on Discord.
+v0.4 underwent gameplay testing. Core Bodycam migration and controls worked in the tested scope. Exposure-control defects remain; **v0.4.1 correction is planned**, followed by owner retest and a future release decision. **No public download is available.**
 
-This is a presentation/community task. The Light Mods remain **TESTED / FINAL-FOR-NOW** unless recording exposes a real bug.
+## Grenades and GEKF
 
-### 3. Light Mods — public release preparation
-- [ ] Audit redistributed files and permissions.
-- [ ] Prepare clean public packages.
-- [ ] Write installation / upgrade / uninstall instructions.
-- [ ] Document required and optional dependencies.
-- [ ] Write compatibility / known-issues section.
-- [ ] Produce release checksums.
-- [ ] Add credits and upstream attribution.
-- [ ] Publish versioned GitHub Releases.
+Grenades remains in development; radial design remains IDEA until explicitly locked. GEKF is a future framework with DECIDED architecture, not implemented on the maintained engine base. It follows a stable engine baseline, historical recovery and locked implementation spec.
 
-### 4. Grenades Expanded
-- [ ] Complete remaining gameplay acceptance.
-- [ ] Finish radial-menu design before implementation.
-- [ ] Lock the implementation spec when design is mature.
-- [ ] Complete implementation and validation.
-- [ ] Run public-release licensing / packaging gate.
+## Evidence states
 
-### 5. GEKF / Universal Input & Action Framework
-- [ ] Recover and verify historical GEKF docs and old engine diffs.
-- [ ] Confirm what was demonstrated historically versus what remained unresolved.
-- [ ] Lock the implementation specification.
-- [ ] v1.0: F13-F24 first-class MCM bindings.
-- [ ] v1.1: Mouse6-Mouse8.
-- [ ] v1.2: transactional vanilla Action Ownership.
-- [ ] v1.3: optional Tap / Double Tap / Hold API.
-- [ ] v1.4: binding / ownership diagnostics and conflict inspector.
-
-## State definitions used here
-
-- **IDEA** — proposed, not approved.
-- **DECIDED** — approved design or requirement.
-- **IMPLEMENTED** — present in source.
-- **LOCALLY VALIDATED** — passed local/static/automated validation.
-- **TESTED** — confirmed working through owner gameplay testing.
-- **FINAL-FOR-NOW** — accepted current endpoint; reopen only for a bug, compatibility issue, or approved enhancement.
-
-Public release is an additional packaging/licensing decision and is **not implied** by TESTED.
+IDEA → DECIDED → IMPLEMENTED → LOCALLY VALIDATED → TESTED → FINAL-FOR-NOW. Never infer later states. Public release is a separate distribution decision. Future public changes, including Light 2.0.1/2.1, require new explicit current-task authorization.
