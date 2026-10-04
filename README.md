@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/README-banner.png" alt="Rainy GAMMA patrol at sunset" width="100%">
+</p>
+
 # GAMMA Mod Releases
 
 Player light controls and community projects for **S.T.A.L.K.E.R. Anomaly / GAMMA**.
@@ -44,4 +48,4 @@ Showcase recording **complete** · Discord posting **pending**. [Showcase checkl
 
 [Credits](CREDITS.md) · [Release policy](RELEASE-POLICY.md) · [Redistribution review](docs/LIGHT-REDISTRIBUTION-REVIEW.md)
 
-Independent community project; no affiliation or endorsement by GSC Game World or the GAMMA team. The [approved screenshot banner](assets/README.md) awaits the exact selected image.
+Independent community project; no affiliation or endorsement by GSC Game World or the GAMMA team.

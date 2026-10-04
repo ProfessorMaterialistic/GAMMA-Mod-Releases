@@ -1,10 +1,10 @@
 # README banner
 
-Expected file: `assets/README-banner.png`.
+Published file: [README-banner.png](README-banner.png).
 
-Use only the owner's selected, lightly enhanced GAMMA screenshot: first-person rifle, rain, orange sunset, companion ahead/right, restrained saturation, natural lighting, no text or logos. The exact final edit has not been confidently located. Do not substitute a generated poster, a heavier edit, or a similarly named image.
+The owner supplied the approved image in this folder on 2026-10-04. It shows a rainy sunset patrol, first-person rifle and companion ahead/right, with restrained saturation, natural lighting and no text or logos.
 
-Place the selected image at that path without changing its aspect ratio. Then insert this hero above the root heading and remove the pending-banner sentence:
+The supplied PNG is preserved byte-for-byte, renamed to the canonical filename and displayed above the root README heading at its original aspect ratio:
 
 ```html
 <p align="center">
@@ -12,4 +12,4 @@ Place the selected image at that path without changing its aspect ratio. Then in
 </p>
 ```
 
-Banner placement is a public-repository write and requires current-task authorization. No replacement artwork was generated or copied during this documentation pass.
+This completes the approved banner step of the authorized Light release-hub reconciliation. Future replacement or public commits still require explicit current-task authorization.

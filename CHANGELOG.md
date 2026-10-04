@@ -16,3 +16,8 @@ This entry records repository documentation work. No mod version, release tag, d
 - Public Auto NVG status now reflects partial gameplay testing and planned v0.4.1 correction.
 - Initial Light release authorization recorded; archive/tag publication held for bundled component clearance.
 - Prepared documentation was reused; no gameplay implementation or other mod published.
+
+## 2026-10-04 — approved banner added
+
+- Added the owner's selected rainy sunset screenshot above the root README heading, preserving the supplied PNG unchanged.
+- Completed the banner roadmap milestone and updated screenshot attribution.

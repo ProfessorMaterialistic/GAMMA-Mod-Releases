@@ -28,7 +28,7 @@ flowchart TD
 - [ ] Clear [exact bundled redistribution](docs/LIGHT-REDISTRIBUTION-REVIEW.md).
 - [ ] Publish One Key Light 2.0 and verify archive download.
 - [ ] Publish Unified Player Light Controls 2.0 and verify archive download.
-- [ ] Place exact approved [banner screenshot](assets/README.md).
+- [x] Place exact approved [banner screenshot](assets/README.md).
 - [ ] Post clip to Discord; no completed-post evidence supplied.
 
 ## Auto NVG

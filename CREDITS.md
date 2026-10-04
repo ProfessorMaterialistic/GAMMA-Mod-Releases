@@ -9,6 +9,6 @@
 
 See [One Key credits](mods/One-Key-Light/CREDITS.md), [Unified credits](mods/Unified-Player-Light-Controls/CREDITS.md) and the [component redistribution review](docs/LIGHT-REDISTRIBUTION-REVIEW.md). Preserve upstream credit chains and asset-specific notices; complete dependency packages are installed separately.
 
-The selected banner will use the owner's GAMMA screenshot with only the selected subtle enhancement. Its exact file remains pending; no alternative artwork is included.
+The README banner is the owner's selected, lightly enhanced GAMMA screenshot: rainy sunset patrol with a first-person weapon and companion ahead/right. The supplied image is included unchanged, with no text or logos added.
 
 No blanket repository license is assigned before auditing actual materials. Attribution is not a substitute for redistribution permission. Auto NVG and Grenades package-specific credits will accompany any separately approved release.
