@@ -1,0 +1,117 @@
+defaults={enabled=true,key=DIK_keys.MOUSE_5,tap="headlamp",double="utlf_visible",hold="laser",double_ms=225,hold_ms=300,shortcut=true,modifier=1,menu_key=-1,menu_selection=1,menu_size=160,menu_opacity=155,hide_bound=false}
+local menu_options={shortcut=true,modifier=true,menu_key=true,menu_selection=true,menu_size=true,menu_opacity=true,hide_bound=true}
+local visibility_names={}
+defaults.indicator_style=1;defaults.show_battery=true;defaults.radial_behavior=1;defaults.allow_movement=true
+defaults.battery_color=true;defaults.radial_theme=1;defaults.right_click=2
+defaults.show_locks=true;menu_options.show_locks=true
+menu_options.battery_color=true;menu_options.radial_theme=true;menu_options.right_click=true
+menu_options.indicator_style=true;menu_options.show_battery=true;menu_options.radial_behavior=true;menu_options.allow_movement=true
+function path(id) return "one_key_lights/"..(menu_options[id] and "menu/" or "controls/")..id end
+-- Default functors run after gathering; retain preferences from the old flat page.
+function legacy_default(id,kind)
+    local old=axr_main.config:r_value("mcm","one_key_lights/"..id,kind)
+    if old~=nil then return old end
+    return defaults[id]
+end
+-- MCM destroys page controls when navigating or rebuilding its option list.
+-- Never retain native UI objects beyond the hook that created them.
+function status_hook(index,anchor,handlers)
+    local control=handlers and handlers.desc
+    if control then
+        local lines=one_key_lights_bindings.status_lines()
+        control:SetText(lines[index] or "")
+    end
+end
+function refresh_status(ui)
+    -- Only explicit button callbacks supply a live MCM window.
+    -- Binding operations and settings notifications must not touch cached UI.
+    if ui then ui:Reset_last_opt() end
+end
+function clear_binding(ui)
+    one_key_lights_bindings.clear()
+    refresh_status(ui)
+end
+function restore_binding(ui)
+    one_key_lights_bindings.restore()
+    refresh_status(ui)
+end
+function on_mcm_load()
+    local content={}
+    for _,a in ipairs(one_key_lights_actions.list(false)) do content[#content+1]={a.id,a.name} end
+    local function desc(id,text) return {id=id,type="desc",text=text} end
+    local function option(id,kind,val,extra)
+        local o={id=id,type=kind,val=val,def={legacy_default,id,val}}
+        for k,v in pairs(extra or {}) do o[k]=v end
+        return o
+    end
+    local controls={
+        desc("manual_help","Shortcuts force the beam ON/OFF; AUTO resumes saved aim rules. Optional linked pairs follow NVGs continuously: IR deployed, white stowed. OFF stays off. Separate controls and tuning remain available."),
+        option("enabled","check",1),option("key","key_bind",2),
+        option("tap","list",0,{content=content,no_str=true}),
+        option("double","list",0,{content=content,no_str=true}),
+        option("hold","list",0,{content=content,no_str=true}),
+        option("double_ms","track",2,{min=100,max=500,step=25}),
+        option("hold_ms","track",2,{min=150,max=1000,step=25}),
+    }
+    for _,pair in ipairs({"weapon","head"}) do
+        if bling_situational.available(pair) then
+            local p=pair
+            controls[#controls+1]={id="link_"..p,type="button",functor_ui={function(ui)
+                bling_situational.set_link(p,not bling_situational.linked(p));refresh_status(ui)
+            end}}
+            controls[#controls+1]={id="link_status_"..p,type="desc",text="",ui_hook_functor={function(anchor,handlers)
+                if handlers and handlers.desc then handlers.desc:SetText((p=="head" and "Headlamp: " or "Weapon light: ")..(bling_situational.linked(p) and "NVG-linked (white / IR)" or "Separate controls")) end
+            end}}
+        end
+    end
+    local menu={
+        option("menu_key","key_bind",2),
+        option("menu_selection","list",2,{content={{1,"Tap: click / Hold: release"},{2,"Left click only (release closes)"},{3,"Release Opening Key"}},no_str=true}),
+        desc("help","Left click only: hold the opening key, click to change lights, release to close without selecting. Tap-open menus close with the opening key, center or Escape. Release Opening Key selects the hovered light on release."),
+        option("shortcut","check",1),option("modifier","list",2,{content={{1,"Shift"},{2,"Ctrl"},{3,"Alt"}},no_str=true}),
+    }
+    menu[#menu+1]=option("menu_size","track",2,{min=120,max=240,step=10})
+    menu[#menu+1]=option("menu_opacity","track",2,{min=60,max=230,step=5})
+    menu[#menu+1]=option("hide_bound","check",1)
+    local function caption(text)
+        return {function(anchor,handlers) if handlers and handlers.cap then handlers.cap:TextControl():SetText(text) end end}
+    end
+    menu[#menu+1]=option("indicator_style","list",2,{content={{1,"[OFF] / [ON] / [AUTO]"},{2,"Blank / O / OO"},{3,"Blank / X / XX"},{4,"Gray / Green / Amber dots"}},no_str=true,ui_hook_functor=caption("Light state indicators")})
+    menu[#menu+1]=option("show_battery","check",1,{ui_hook_functor=caption("Show real battery charge (%)")})
+    menu[#menu+1]=option("show_locks","check",1,{ui_hook_functor=caption("Show locks for unavailable lights")})
+    menu[#menu+1]=option("battery_color","check",1,{ui_hook_functor=caption("Color battery charge: green / yellow / red")})
+    menu[#menu+1]=option("radial_theme","list",2,{content={{1,"Dark"},{2,"Black and White"},{3,"Light"},{4,"Arc Dark"},{5,"GAMMA"},{6,"Loners"},{7,"Bandits"},{8,"Clear Sky"},{9,"Duty"},{10,"Freedom"},{11,"Mercenaries"},{12,"Military"},{13,"Ecologists"},{14,"Monolith"},{15,"Renegades"},{16,"Sin"},{17,"UNISG"},{18,"Zombified"}},no_str=true,ui_hook_functor=caption("Radial color theme")})
+    menu[#menu+1]=option("right_click","list",2,{content={{1,"Close radial"},{2,"Cycle backward / choose highlighted mode"},{3,"Same as left click"},{4,"Toggle OFF / last ON or AUTO"}},no_str=true,ui_hook_functor=caption("Right-click action")})
+    menu[#menu+1]=option("radial_behavior","list",2,{content={{1,"Single radial: cycle OFF / ON / AUTO"},{2,"Two-step radial: choose a mode"},{3,"Original quick toggle"}},no_str=true,ui_hook_functor=caption("Radial light selection")})
+    menu[#menu+1]=option("allow_movement","check",1,{ui_hook_functor=caption("Allow movement while radial is open")})
+    menu[#menu+1]=desc("state_help","Single radial: click a weapon light to cycle OFF > ON > AUTO; the menu stays open. Release-to-select cycles once and closes. AUTO follows the saved aim rule. Headlamps and standalone lights keep their normal toggles. Movement uses your normal bindings; the mouse controls the menu. Detailed layouts use at least 200px.")
+    for _,a in ipairs(one_key_lights_actions.list(true,true)) do
+        local id="show_"..a.id
+        defaults[id]=true; menu_options[id]=true; visibility_names[id]=a.name
+        menu[#menu+1]=option(id,"check",1,{ui_hook_functor={function(anchor,handlers)
+            if handlers and handlers.cap then handlers.cap:TextControl():SetText("Show "..a.name) end
+        end}})
+    end
+    local binding={}
+    for i=1,4 do
+        local index=i
+        binding[#binding+1]={id="status"..i,type="desc",text="",ui_hook_functor={function(anchor,handlers) status_hook(index,anchor,handlers) end}}
+    end
+    binding[#binding+1]={id="clear",type="button",functor_ui={clear_binding}}
+    binding[#binding+1]={id="restore",type="button",functor_ui={restore_binding}}
+    binding[#binding+1]={id="refresh",type="button",functor_ui={refresh_status}}
+    local compatibility={}
+    for _,d in ipairs({{"utlf_core","UTLF"},{"zzz_bas_laser_control","Laser"},{"ui_mcm","MCM"}}) do
+        compatibility[#compatibility+1]=desc(d[1],d[2]..": "..(one_key_lights_actions.present(d[1]) and "Detected" or "MISSING (required)"))
+    end
+    for _,a in ipairs(one_key_lights_actions.list(true)) do
+        if a.id~="headlamp" and a.id~="laser" and a.id~="utlf_visible" then compatibility[#compatibility+1]=desc(a.id,a.name..": Installed") end
+    end
+    return {id="one_key_lights",gr={
+        {id="controls",text="Controls",sh=true,gr=controls},
+        {id="menu",text="Quick Menu",sh=true,gr=menu},
+        {id="bindings",text="Anomaly Torch Binding",sh=true,gr=binding},
+        {id="compatibility",text="Compatibility",sh=true,gr=compatibility},
+    }}
+end
+

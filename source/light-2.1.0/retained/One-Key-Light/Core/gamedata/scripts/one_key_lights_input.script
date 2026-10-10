@@ -1,0 +1,65 @@
+local cfg={enabled=true,key=0,tap="headlamp",double="utlf_visible",hold="laser",double_ms=225,hold_ms=300,shortcut=true,modifier=1}
+local armed=false
+local fsm=one_key_lights_gesture.new()
+local function usable() return db and db.actor and db.actor:alive() and not device():is_paused() and actor_menu.is_hud_free() end
+function owns_key(key)
+    return armed and cfg.enabled and (usable() or one_key_lights_menu.is_open()) and ((cfg.key>0 and key==cfg.key) or cfg.menu_key and cfg.menu_key>0 and key==cfg.menu_key) or false
+end
+function reset() one_key_lights_gesture.reset(fsm) end
+function settings() return cfg end
+function load_settings()
+    if one_key_lights_menu.is_open() then one_key_lights_menu.close() end
+    reset()
+    if ui_mcm then ui_mcm.get(one_key_lights_mcm.path("enabled")) end
+    for name,default in pairs(one_key_lights_mcm.defaults) do
+        local value=ui_mcm and ui_mcm.get(one_key_lights_mcm.path(name));if value==nil then value=default end;cfg[name]=value
+    end
+    cfg.key=tonumber(cfg.key) or 0;cfg.menu_key=tonumber(cfg.menu_key) or -1
+    cfg.double_ms=math.max(100,math.min(500,tonumber(cfg.double_ms) or 225))
+    cfg.hold_ms=math.max(150,math.min(1000,tonumber(cfg.hold_ms) or 300));armed=true
+end
+local function modifier()
+    local keys={{DIK_keys.DIK_LSHIFT,DIK_keys.DIK_RSHIFT},{DIK_keys.DIK_LCONTROL,DIK_keys.DIK_RCONTROL},{DIK_keys.DIK_LMENU,DIK_keys.DIK_RMENU}}
+    local k=keys[tonumber(cfg.modifier) or 1];return k and ((key_state(k[1]) or 0)~=0 or (key_state(k[2]) or 0)~=0)
+end
+local function transition(event)
+    for _,effect in ipairs(one_key_lights_gesture.step(fsm,event,time_global(),cfg)) do
+        if effect.action=="quick_menu" then one_key_lights_menu.open(event=="menu" and cfg.menu_key or cfg.key,effect.held,cfg.menu_selection,event=="menu")
+        else one_key_lights_actions.run(effect.action) end
+    end
+end
+function on_press(key,bind,dis,flags)
+    if not owns_key(key) then return end
+    if dis then reset();return end
+    if flags then flags.ret_value=false end
+    if one_key_lights_menu.is_open() then one_key_lights_menu.press(key);return end
+    if key==cfg.menu_key and key~=cfg.key then transition("menu")
+    elseif cfg.shortcut and modifier() then transition("modifier")
+    else transition("press") end
+end
+function on_release(key,bind,dis,flags)
+    if not owns_key(key) then return end
+    if dis then reset();return end
+    if flags then flags.ret_value=false end
+    if one_key_lights_menu.release(key) then reset();return end
+    if key==cfg.key then transition("release") end
+end
+function on_hold(key,bind,dis,flags) if not dis and owns_key(key) and flags then flags.ret_value=false end end
+function update()
+    light_compat.tick()
+    if not armed then return end
+    if one_key_lights_menu.is_open() then return end
+    if not cfg.enabled or not usable() then reset();return end
+    transition("tick")
+    one_key_lights_standalone.update()
+end
+function on_game_start()
+    RegisterScriptCallback("actor_on_first_update",load_settings)
+    RegisterScriptCallback("on_option_change",load_settings)
+    RegisterScriptCallback("on_before_key_press",on_press)
+    RegisterScriptCallback("on_before_key_release",on_release)
+    RegisterScriptCallback("on_before_key_hold",on_hold)
+    RegisterScriptCallback("actor_on_update",update)
+    RegisterScriptCallback("on_game_load",reset)
+    RegisterScriptCallback("load_state",reset)
+end

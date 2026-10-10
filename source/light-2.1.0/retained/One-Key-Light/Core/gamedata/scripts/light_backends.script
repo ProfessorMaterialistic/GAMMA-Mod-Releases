@@ -1,0 +1,180 @@
+-- Direct device adapters only. No AUTO engine and no companion dependency.
+local function api(n) return light_compat.module(n) end
+function weapon() return db and db.actor and db.actor:active_item() end
+-- Bodycam/MT HudItem.h + Weapon.h: firing is a usable weapon state, not
+-- equipment loss. Keep the existing gates for draw, holster, reload and bore.
+local WEAPON_IDLE,WEAPON_FIRE,WEAPON_FIRE2=0,5,6
+function weapon_emission_ready(w)
+    if not w then return false end
+    local state=w:get_state()
+    return state==WEAPON_IDLE or state==WEAPON_FIRE or state==WEAPON_FIRE2
+end
+function context()
+    local core=api("utlf_core")
+    if not db or not db.actor or not core or not core.active_supported_weapon then return end
+    local w,p=core.active_supported_weapon()
+    if not w or not p then return end
+    local attachment
+    if core.is_modular_profile(p) then
+        attachment=core.saved_modular_light(w)
+        if not attachment or not attachment.section then return end
+    end
+    return w,p,attachment and attachment.section or w:section()
+end
+function nv() return item_device and item_device.nv_state==true or false end
+function installed(id)
+    if id=="utlf_visible" then return api("utlf_core")~=nil end
+    if id=="utlf_ir" then return api("utlf_core")~=nil and api("utlf_ir_mode")~=nil end
+    if id=="headlamp_ir" then return api("ir_headlamp")~=nil end
+    if id=="laser" then return api("zzz_bas_laser_control")~=nil end
+    return id=="headlamp" and item_device~=nil
+end
+function equipped(id)
+    if not db or not db.actor then return false end
+    if id=="utlf_visible" or id=="utlf_ir" then
+        if not context() then return false end
+        if id=="utlf_ir" then
+            local ir=api("utlf_ir_mode")
+            return ir and ir.light_has_nvgs and ir.light_has_nvgs() or false
+        end
+        return true
+    end
+    if id=="headlamp" then return db.actor:item_in_slot(10)~=nil end
+    if id=="headlamp_ir" then
+        local ir=api("ir_headlamp");local s=ir and ir.get_status()
+        return s and s.illuminator==true or false
+    end
+    if id=="laser" then
+        local l=api("zzz_bas_laser_control");local w=weapon()
+        return l and w and l.has_laser(w:section())==true or false
+    end
+    return false
+end
+function battery(id)
+    if id=="utlf_visible" or id=="utlf_ir" then
+        local core,b=api("utlf_core"),api("utlf_battery")
+        if core and b and core.battery_enabled() then
+            local w,p=context();local s=w and b.battery_state_for_weapon(w,p,false)
+            return s and s.charge
+        end
+    elseif id=="headlamp" then
+        local t=db and db.actor and db.actor:item_in_slot(10)
+        if t and item_device.dev_consumption and item_device.dev_consumption[t:section()] then return t:condition() end
+    end
+end
+function can_emit(id)
+    if not installed(id) or not equipped(id) then return false end
+    if id=="utlf_visible" or id=="utlf_ir" then
+        local w,p=context();local b=api("utlf_battery")
+        if not weapon_emission_ready(w) or (b and not b.has_power(w,p)) then return false end
+        return id~="utlf_ir" or nv()
+    end
+    if id=="headlamp" then
+        local t=db.actor:item_in_slot(10)
+        local d=db.actor.active_detector and db.actor:active_detector()
+        if d and d:section()=="device_flashlight" then return false end
+        return not item_device.is_device_charged or item_device.is_device_charged(t)==true
+    end
+    if id=="headlamp_ir" then return nv() end
+    return weapon_emission_ready(weapon())
+end
+function requested(id)
+    if id=="utlf_ir" then
+        local ir=api("utlf_ir_mode");local f=ir and (ir.bling_ir_requested or ir.oklc_requested)
+        return f and f()==true or false
+    end
+    if id=="utlf_visible" then
+        local core=api("utlf_core");local s=core and core.get_state()
+        return s and s.desired_on==true and not requested("utlf_ir") or false
+    end
+    if id=="headlamp_ir" then
+        local ir=api("ir_headlamp");return ir and ir.get_status().enabled==true or false
+    end
+    if id=="headlamp" then
+        local a=api("adjustable_flashlight")
+        if a then return a.is_enabled()==true end
+        local t=db and db.actor and db.actor:item_in_slot(10)
+        return t and item_device.is_torch_active()==t:id() or false
+    end
+    if id=="laser" then
+        local l=api("zzz_bas_laser_control");local w=weapon()
+        return l and w and l.oklc_is_on and l.oklc_is_on(w:id())==true or false
+    end
+    return false
+end
+function emitting(id)
+    if id=="utlf_visible" or id=="utlf_ir" then
+        local core=api("utlf_core");local s=core and core.get_state()
+        return s and s.light and s.light.enabled==true and (requested("utlf_ir")== (id=="utlf_ir")) and (id~="utlf_ir" or nv()) or false
+    end
+    if id=="headlamp" then
+        local a=api("adjustable_flashlight")
+        if a then return a.is_active()==true end
+        local t=db and db.actor and db.actor:item_in_slot(10);return t and t:torch_enabled()==true or false
+    end
+    if id=="headlamp_ir" then local ir=api("ir_headlamp");return ir and ir.is_ir_active()==true or false end
+    if id=="laser" then
+        local l=api("zzz_bas_laser_control");return l and l.light_emitting and l.light_emitting()==true or false
+    end
+    return false
+end
+local function apply(id,enabled,manual)
+    enabled=enabled==true
+    if enabled and not can_emit(id) then return false end
+    if id=="utlf_ir" then
+        local ir=api("utlf_ir_mode");return ir and ir.light_set and ir.light_set(enabled) or false
+    elseif id=="utlf_visible" then
+        local core=api("utlf_core");if not core then return false end
+        local ir=api("utlf_ir_mode")
+        if enabled and ir and ir.light_set then ir.light_set(false) end
+        local s=core.get_state();local w,p=context();local lights=api("utlf_lights")
+        if not lights then return false end
+        if enabled then
+            if not s.desired_on or not s.light or s.weapon_id~=w:id() then
+                s.desired_on=true;core.clear_replacement();lights.attach_light(w,p,"Light control")
+            end
+        elseif s.desired_on or s.light then
+            s.desired_on=false;core.clear_replacement();lights.detach_current_light("Light OFF")
+        end
+        return true
+    elseif id=="headlamp_ir" then
+        local ir=api("ir_headlamp");return ir and ir.light_set and ir.light_set(enabled) or false
+    elseif id=="headlamp" then
+        local a=api("adjustable_flashlight")
+        if a and a.set_enabled then return a.set_enabled(enabled) end
+        local t=db and db.actor and db.actor:item_in_slot(10)
+        if not t then return false end
+        if requested(id)~=enabled then item_device.toggle_torch() end
+        return true
+    elseif id=="laser" then
+        local l=api("zzz_bas_laser_control");local w=weapon()
+        return l and w and l.light_set and l.light_set(w:id(),enabled,manual) or false
+    end
+    return false
+end
+function set(id,enabled,manual)
+    if light_compat.link_active() then light_compat.link_stage("backend:set-before",id..":"..tostring(enabled==true)) end
+    local result=light_compat.physical(function() return apply(id,enabled,manual) end)
+    if light_compat.link_active() then light_compat.link_stage("backend:set-after",id..":"..(type(result)=="boolean" and tostring(result) or type(result))) end
+    return result
+end
+function feedback(id,enabled,manual)
+    if light_compat.link_active() then light_compat.link_stage("sound:before",id..":"..tostring(enabled==true)) end
+    local name=({utlf_visible="utlf_input",utlf_ir="utlf_ir_mode",headlamp="actor_effects",headlamp_ir="ir_headlamp",laser="zzz_bas_laser_control"})[id]
+    local backend=name and api(name)
+    if backend and backend.light_feedback then backend.light_feedback(enabled,manual) end
+    light_compat.link_stage("sound:after")
+end
+function toggle(id)
+    local handled=light_compat.manual(id)
+    if handled~=nil then return handled end
+    local desired=not requested(id)
+    if id=="headlamp" or id=="headlamp_ir" then
+        return light_compat.play_headlamp_toggle_animation(id,desired,function() set(id,desired,true) end)
+    end
+    return set(id,desired,true)
+end
+function name(id)
+    if id=="headlamp" then local a=api("adjustable_flashlight");return a and a.oklc_backend_name or "Native / G2X" end
+    return ({utlf_visible="UTLF",utlf_ir="UTLF IR",headlamp_ir="IR Headlamps",laser="Laser Settings"})[id]
+end

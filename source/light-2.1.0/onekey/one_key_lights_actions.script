@@ -1,0 +1,56 @@
+local order={"headlamp","utlf_visible","laser","utlf_ir","headlamp_ir"}
+local names={headlamp="Headlamp",utlf_visible="UTLF White",laser="Laser",utlf_ir="UTLF IR",headlamp_ir="IR Headlamp",weapon_situational="Weapon Light",headlamp_situational="Headlamp"}
+-- Retain saved legacy IDs as device aliases; only explicit MCM edits change linking.
+local function device(id) return id=="weapon_situational" and "utlf_visible" or id=="headlamp_situational" and "headlamp" or id end
+function module(n) return light_compat.module(n) end
+function present(n) return module(n)~=nil end
+function warn(id,err) light_compat.warn(id,err) end
+function utlf_context() return light_backends.context() end
+function ensure() end -- inexpensive legacy alias; discovery remains lazy
+function equipped(id)
+    id=device(id)
+    local api=module("unified_lights")
+    if api then return api.get_state(id).equipped end
+    return light_backends.equipped(id)
+end
+function pair(id)
+    id=device(id)
+    local api=module("unified_lights");if not api then return end
+    if (id=="utlf_visible" or id=="utlf_ir") and api.get_linked("weapon") then return "weapon" end
+    if (id=="headlamp" or id=="headlamp_ir") and api.get_linked("head") then return "head" end
+end
+function radial_id(id) id=device(id);local p=pair(id);return p and (p=="weapon" and "weapon_situational" or "headlamp_situational") or id end
+function list(menu,raw)
+    local result,seen={},{}
+    if not menu then result={{id="none",name="None",menu=false},{id="quick_menu",name="Light Quick Menu",menu=false}} end
+    for _,id in ipairs(order) do
+        if id=="headlamp" or light_backends.installed(id) then
+            local effective=menu and not raw and radial_id(id) or id
+            if not seen[effective] then result[#result+1]={id=effective,name=names[effective]};seen[effective]=true end
+        end
+    end
+    if not menu and light_backends.installed("utlf_visible") then
+        result[#result+1]={id="weapon_situational",name=names.weapon_situational,menu=false}
+    end
+    return result
+end
+function state(id)
+    id=device(id)
+    if id=="none" or id=="quick_menu" then return true,false end
+    local api=module("unified_lights")
+    if api then local s=api.get_state(id);return s.installed,s.emitting end
+    -- Equipment and battery do not prohibit a logical OFF edit.
+    return light_backends.installed(id),light_backends.emitting(id)
+end
+function run(id)
+    id=device(id)
+    if id=="none" then return true end
+    if id=="quick_menu" then one_key_lights_menu.open();return true end
+    if not db or not db.actor or not db.actor:alive() then return false end
+    local api=module("unified_lights")
+    if api then
+        if one_key_lights_input.settings().gesture_behavior==2 then return api.cycle_mode(id) end
+        return api.manual_toggle(id)
+    end
+    return one_key_lights_standalone.toggle(id)
+end

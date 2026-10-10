@@ -1,0 +1,188 @@
+-- Player-owned ScriptLights only; no NPC torches or global renderer settings.
+local modes = {"weapon", "headlamp", "ir_headlamp", "ir_weapon"}
+local labels = {weapon="UTLF White Light", headlamp="Player Headlamp", ir_headlamp="IR Headlamp", ir_weapon="UTLF IR"}
+local function clamp(v, low, high) return math.max(low, math.min(high, tonumber(v) or low)) end
+local function read(path, default)
+    local id,key=string.match(path,"^bling_player_lights/weapon/([^/]+)/([^/]+)$")
+    if id then return bling_light_profiles.get("weapon",id,key,default) end
+    local v
+    if string.sub(path,1,20)=="bling_player_lights/" then
+        -- MCM 1.7 rejects unregistered paths. Read our persisted numeric values
+        -- from the same backing config that ui_mcm.set writes, preserving saves.
+        v = axr_main and axr_main.config and axr_main.config:r_value("mcm",path,2)
+    else
+        v = ui_mcm and ui_mcm.get and ui_mcm.get(path)
+    end
+    if v == nil then v = default end
+    return v
+end
+local function write(path, value)
+    local id,key=string.match(path,"^bling_player_lights/weapon/([^/]+)/([^/]+)$")
+    if id then bling_light_profiles.put("weapon",id,{[key]=value});return end
+    ui_mcm.set(path, value)
+end
+local function path(mode, id, key) return "bling_player_lights/"..mode.."/"..id.."/"..key end
+function rgb(mode, id)
+    if mode=="ir_headlamp" or mode=="ir_weapon" then return 1,1,1 end
+    return clamp(read(path(mode,id,"r"),1),0,1), clamp(read(path(mode,id,"g"),1),0,1), clamp(read(path(mode,id,"b"),1),0,1)
+end
+function tint_headlamp(light, brightness, mode)
+    local r,g,b = rgb(mode,"player")
+    light.color = fcolor():set(brightness*r, brightness*g, brightness*b, 1)
+end
+function tint_ir(light, id)
+    -- IR colors belong to the original mod, never to visible-light presets.
+end
+local presets={
+    -- Approximate artistic RGB tints, not calibrated black-body temperatures.
+    -- Default leaves the source light's color unchanged.
+    {"Default (Normal)",1,1,1}, {"Soft White",1,0.90,0.80},
+    {"Neutral White (~4000K)",1,0.81,0.65}, {"Cool White (~6500K)",0.95,0.97,1}
+}
+function preset_name(mode,id)
+    local r,g,b=rgb(mode,id)
+    for _,p in ipairs(presets) do
+        if math.abs(r-p[2])+math.abs(g-p[3])+math.abs(b-p[4])<0.001 then return p[1] end
+    end
+    return "Custom (saved)"
+end
+function set_preset(mode,id,index)
+    if mode~="weapon" and mode~="headlamp" then return end
+    local p=presets[index] or presets[1]
+    for i,key in ipairs({"r","g","b"}) do write(path(mode,id,key),p[i+1]) end
+    normal_update()
+end
+function next_preset(mode,id)
+    local name=preset_name(mode,id)
+    for i,p in ipairs(presets) do
+        if name==p[1] then set_preset(mode,id,i%#presets+1);return end
+    end
+    set_preset(mode,id,1)
+end
+function init_color_buttons(dialog,xml,parent,mode)
+    dialog.color_buttons={}
+    for i=1,4 do
+        local index=i
+        local name="btn_color_"..i
+        local button=xml:Init3tButton(name,parent)
+        dialog.color_buttons[i]=button
+        dialog:Register(button,name)
+        dialog:AddCallback(name,ui_events.BUTTON_CLICKED,function()
+            local c=mode=="headlamp" and {id="player"} or context(1)
+            if not c then return end
+            if mode=="weapon" and (not dialog.context or dialog.context.id~=c.id) then dialog:Load();return end
+            set_preset(mode,c.id,index)
+            dialog:Refresh()
+        end,dialog)
+    end
+end
+function refresh_color_buttons(dialog,mode,id)
+    local selected=id and preset_name(mode,id)
+    for i,label in ipairs({"Default","Soft White","Neutral White","Cool White"}) do
+        local button=dialog.color_buttons[i]
+        button:Enable(id~=nil)
+        button:TextControl():SetText(selected==presets[i][1] and ("["..label.."]") or label)
+    end
+end
+function weapon_enabled()
+    local s=utlf_core and utlf_core.get_state()
+    return s and s.desired_on==true or false
+end
+function set_weapon_enabled(enabled)
+    if not context(1) then return end
+    if utlf_ir_mode and utlf_ir_mode.is_ir_active() then return end
+    local weapon,profile=utlf_core.active_supported_weapon()
+    local s=utlf_core.get_state()
+    if enabled==s.desired_on then return end
+    if enabled then
+        if not utlf_battery.has_power(weapon,profile) then utlf_battery.notify_no_battery();return end
+        s.desired_on=true
+        utlf_core.clear_replacement()
+        utlf_lights.attach_light(weapon,profile)
+    else
+        s.desired_on=false
+        utlf_core.clear_replacement()
+        utlf_lights.detach_current_light("visible GUI")
+    end
+end
+local function weapon_context()
+    if not db.actor or not utlf_core or not utlf_core.active_supported_weapon then return nil end
+    local weapon,profile = utlf_core.active_supported_weapon()
+    if not weapon or not profile then return nil end
+    local id = weapon:section()
+    if utlf_core.is_modular_profile(profile) then
+        local saved = utlf_core.saved_modular_light(weapon)
+        if not saved or not saved.section then return nil end
+        id = saved.section
+        profile = utlf_core.light_profile_for_item(id)
+    end
+    if string.sub(id,1,4)=="wpn_" then
+        for _,key in ipairs({"brightness","range","cone","r","g","b"}) do bling_light_profiles.get("weapon",id,key,nil) end
+        id=bling_light_profiles.family(id)
+    end
+    return id,profile,weapon
+end
+function context(index)
+    local mode=modes[index]
+    if mode=="headlamp" or mode=="ir_headlamp" then
+        local prefix=mode=="headlamp" and "adjustable_flashlight" or "ir_headlamp"
+        return {mode=mode,id="player",label=labels[mode],prefix=prefix,brightness=read(prefix.."/brightness",0.55),range=read(prefix.."/range",30),cone=read(prefix.."/beam_size",50)}
+    end
+    local id,p=weapon_context()
+    if not id then return nil end
+    if mode=="ir_weapon" then
+        if not utlf_ir_mode or not utlf_ir_mode.get_ir_settings then return nil end
+        local s=utlf_ir_mode.get_ir_settings(id,p)
+        return {mode=mode,id=id,label=labels[mode],profile=p,brightness=s.brightness,range=s.range,cone=s.cone_deg}
+    end
+    return {mode=mode,id=id,label=labels[mode],profile=p,brightness=read(path(mode,id,"brightness"),1),range=read(path(mode,id,"range"),p.range or 48),cone=read(path(mode,id,"cone"),p.cone_deg or 50)}
+end
+function bounds(mode)
+    if mode=="weapon" then return {{0.1,10,0.1},{5,200,1},{8,120,1}} end
+    if mode=="ir_weapon" then return {{0.25,2,0.05},{5,100,1},{8,120,1}} end
+    return {{0.1,1.2,0.05},{5,100,1},{10,120,1}}
+end
+function normal_update()
+    if not db.actor or not utlf_core then return end
+    if utlf_ir_mode and utlf_ir_mode.is_ir_active and utlf_ir_mode.is_ir_active() then return end
+    local s=utlf_core.get_state()
+    if not s or not s.light or not s.desired_on then return end
+    local c=context(1)
+    if not c then return end
+    local _,_,weapon=weapon_context()
+    if not weapon or s.weapon_id~=weapon:id() then return end
+    local p=c.profile
+    local color=utlf_core.color_from(p.color)
+    local r,g,b=rgb("weapon",c.id)
+    -- RGB channels directly control beam energy; range is a separate control.
+    local brightness=clamp(c.brightness,0.1,10)
+    s.light.color=fcolor():set(color.r*r*brightness,color.g*g*brightness,color.b*b*brightness,color.a)
+    s.light.range=clamp(c.range,5,200)
+    s.light:set_cone(math.rad(clamp(c.cone,8,120)))
+end
+function save(c, values)
+    if not ui_mcm or not ui_mcm.set then return false end
+    local limits=bounds(c.mode)
+    for i=1,3 do values[i]=clamp(values[i],limits[i][1],limits[i][2]) end
+    if c.prefix then
+        write(c.prefix.."/brightness",values[1]); write(c.prefix.."/range",values[2]); write(c.prefix.."/beam_size",values[3])
+    elseif c.mode=="ir_weapon" then
+        utlf_ir_mode.set_ir_settings(c.id,values[2],values[3],values[1])
+    else
+        for i,key in ipairs({"brightness","range","cone"}) do write(path(c.mode,c.id,key),values[i]) end
+    end
+    if c.mode=="weapon" or c.mode=="headlamp" then
+        for i,key in ipairs({"r","g","b"}) do
+            if values[i+3]~=nil then write(path(c.mode,c.id,key),clamp(values[i+3],0,1)) end
+        end
+    end
+    if c.mode=="ir_weapon" then utlf_ir_mode.apply_active_ir_settings() else normal_update() end
+    return true
+end
+function on_game_start()
+    RegisterScriptCallback("actor_on_update",normal_update)
+    -- Independent entry; existing MGI headlamp and IR integrations stay registered.
+    if MGI and MGI.register_gui then
+        MGI.register_gui({id="bling_player_lights",name="UTLF White Light",author="Bling",version="1.3",category="Lighting",order=250,description="Visible weapon light controls and color presets.",ui=bling_player_lights_ui})
+    end
+end

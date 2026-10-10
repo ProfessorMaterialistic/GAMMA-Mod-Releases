@@ -1,0 +1,252 @@
+local strgsub = string.gsub
+
+local MODULAR_FLASHLIGHT_MCM = {
+    page_id = "modular_flashlights",
+    range = { suffix = "_range", min = 5, max = 200 },
+    cone_deg = { suffix = "_cone_deg", min = 8, max = 120 },
+    battery_type = { suffix = "_battery_type" },
+    battery_consumption = { suffix = "_battery_consumption", min = 0, max = 1 },
+    items = {
+        {
+            section = "utlf_tactical_light",
+            mcm_key = "m600df",
+            heading = "ui_mcm_utlf_modular_flashlights_m600df",
+        },
+        {
+            section = "utlf_tactical_light_m300c",
+            mcm_key = "m300c",
+            heading = "ui_mcm_utlf_modular_flashlights_m300c",
+        },
+        {
+            section = "utlf_tactical_light_x300",
+            mcm_key = "x300",
+            heading = "ui_mcm_utlf_modular_flashlights_x300",
+        },
+        {
+            section = "utlf_tactical_light_foxtrot1",
+            mcm_key = "foxtrot1",
+            heading = "ui_mcm_utlf_modular_flashlights_foxtrot1",
+        },
+        {
+            section = "utlf_tactical_light_olight",
+            mcm_key = "olight",
+            heading = "ui_mcm_utlf_modular_flashlights_olight",
+        },
+        {
+            section = "utlf_tactical_light_streamlight",
+            mcm_key = "streamlight",
+            heading = "ui_mcm_utlf_modular_flashlights_streamlight",
+        },
+    },
+}
+
+local MODULAR_FLASHLIGHT_MCM_BY_SECTION = {}
+for _, item in ipairs(MODULAR_FLASHLIGHT_MCM.items) do
+    MODULAR_FLASHLIGHT_MCM_BY_SECTION[item.section] = item
+end
+
+local function defaults()
+    return utlf_core.DEFAULTS
+end
+
+local function base_light_profile_for_item(item_section)
+    local d = defaults()
+    local copy = {
+        light_type = 2,
+        range = d.RANGE,
+        cone_deg = d.CONE_DEG,
+        hud_mode = false,
+        shadow = true,
+        volumetric = false,
+        volumetric_distance = 0.25,
+        volumetric_intensity = 0.02,
+        volumetric_quality = 0.25,
+        texture = d.TEXTURE,
+        color = nil,
+        light_bone = d.LIGHT_BONE,
+        light_direction = utlf_parse.vector3(d.LIGHT_DIRECTION, { x = 0, y = 0, z = 0 }),
+        battery_flicker_threshold = d.BATTERY_FLICKER_THRESHOLD,
+    }
+
+    if not item_section then
+        return copy
+    end
+
+    copy.light_type = utlf_parse.section_number(item_section, "light_type", copy.light_type)
+    copy.range = utlf_parse.section_number(item_section, "light_range", copy.range)
+    copy.cone_deg = utlf_parse.section_number(item_section, "light_cone_deg", copy.cone_deg)
+    copy.hud_mode = utlf_parse.section_bool(item_section, "light_hud_mode", copy.hud_mode)
+    copy.shadow = utlf_parse.section_bool(item_section, "light_shadow", copy.shadow)
+    copy.volumetric = utlf_parse.section_bool(item_section, "light_volumetric", copy.volumetric)
+    copy.volumetric_distance = utlf_parse.section_number(item_section, "light_volumetric_distance", copy.volumetric_distance)
+    copy.volumetric_intensity = utlf_parse.section_number(item_section, "light_volumetric_intensity", copy.volumetric_intensity)
+    copy.volumetric_quality = utlf_parse.section_number(item_section, "light_volumetric_quality", copy.volumetric_quality)
+    copy.texture = utlf_parse.section_string(item_section, "light_texture", copy.texture)
+    copy.color = utlf_parse.section_string(item_section, "light_color", copy.color)
+    copy.light_bone = utlf_parse.section_string(item_section, "light_bone", copy.light_bone)
+    copy.light_direction = utlf_parse.vector3(utlf_parse.section_string(item_section, "light_direction", nil), copy.light_direction)
+    copy.battery_type = utlf_parse.trim(utlf_parse.section_string(item_section, "battery_type", nil))
+    if copy.battery_type == "" then
+        copy.battery_type = nil
+    end
+
+    local battery_consumption = utlf_parse.section_number(
+        item_section,
+        "battery_consumption",
+        utlf_parse.section_number(item_section, "battery_consumption_rate", nil)
+    )
+    copy.battery_consumption = battery_consumption and math.max(battery_consumption, 0) or nil
+    copy.battery_consumption_rate = copy.battery_consumption
+    copy.battery_flicker_threshold = utlf_parse.section_number(
+        item_section,
+        "battery_flicker_threshold",
+        copy.battery_flicker_threshold
+    )
+
+    return copy
+end
+
+local function modular_mcm_option(item, field)
+    local spec = MODULAR_FLASHLIGHT_MCM[field]
+    return item.mcm_key .. spec.suffix, spec.min, spec.max
+end
+
+function modular_flashlight_mcm_entries()
+    local entries = {}
+
+    for _, item in ipairs(MODULAR_FLASHLIGHT_MCM.items) do
+        local profile = base_light_profile_for_item(item.section)
+        local range_id, range_min, range_max = modular_mcm_option(item, "range")
+        local cone_id, cone_min, cone_max = modular_mcm_option(item, "cone_deg")
+        local battery_type_id = modular_mcm_option(item, "battery_type")
+        local battery_consumption_id, battery_consumption_min, battery_consumption_max = modular_mcm_option(
+            item,
+            "battery_consumption"
+        )
+
+        entries[#entries + 1] = {
+            section = item.section,
+            mcm_key = item.mcm_key,
+            heading = item.heading,
+            range = { id = range_id, def = profile.range, min = range_min, max = range_max },
+            cone_deg = { id = cone_id, def = profile.cone_deg, min = cone_min, max = cone_max },
+            battery_type = { id = battery_type_id, def = profile.battery_type or defaults().BATTERY_TYPE },
+            battery_consumption = {
+                id = battery_consumption_id,
+                def = profile.battery_consumption or defaults().BATTERY_CONSUMPTION,
+                min = battery_consumption_min,
+                max = battery_consumption_max,
+            },
+        }
+    end
+
+    return entries
+end
+
+function light_profile_for_item(item_section)
+    local copy = base_light_profile_for_item(item_section)
+    local item = MODULAR_FLASHLIGHT_MCM_BY_SECTION[item_section]
+    if not item then
+        return copy
+    end
+
+    local range_id, range_min, range_max = modular_mcm_option(item, "range")
+    local cone_id, cone_min, cone_max = modular_mcm_option(item, "cone_deg")
+    local battery_type_id = modular_mcm_option(item, "battery_type")
+    local battery_consumption_id, battery_consumption_min, battery_consumption_max = modular_mcm_option(
+        item,
+        "battery_consumption"
+    )
+    copy.range = utlf_core.get_mcm_number(
+        utlf_core.config_path(MODULAR_FLASHLIGHT_MCM.page_id, range_id),
+        copy.range,
+        range_min,
+        range_max
+    )
+    copy.cone_deg = utlf_core.get_mcm_number(
+        utlf_core.config_path(MODULAR_FLASHLIGHT_MCM.page_id, cone_id),
+        copy.cone_deg,
+        cone_min,
+        cone_max
+    )
+    copy.battery_type = utlf_core.get_mcm_string(
+        utlf_core.config_path(MODULAR_FLASHLIGHT_MCM.page_id, battery_type_id),
+        copy.battery_type or defaults().BATTERY_TYPE
+    )
+    copy.battery_consumption = utlf_core.get_mcm_number(
+        utlf_core.config_path(MODULAR_FLASHLIGHT_MCM.page_id, battery_consumption_id),
+        copy.battery_consumption or defaults().BATTERY_CONSUMPTION,
+        battery_consumption_min,
+        battery_consumption_max
+    )
+    copy.battery_consumption_rate = copy.battery_consumption
+
+    return copy
+end
+
+function is_utlf_attachment_item(section)
+    return ini_sys:r_string_ex(section, "utlf_light_attachment") == "true"
+        or ini_sys:r_bool_ex(section, "utlf_light_attachment") == true
+end
+
+function saved_modular_light(weapon)
+    if not weapon then
+        return nil
+    end
+    return se_load_var(weapon:id(), weapon:name(), defaults().MODULAR_VAR)
+end
+
+function save_modular_light(weapon, section)
+    if not weapon or not section then
+        return
+    end
+
+    se_save_var(weapon:id(), weapon:name(), defaults().MODULAR_VAR, {
+        section = section,
+        icon_layer = ini_sys:r_string_ex(section, "attachment_icon_layer"),
+    })
+end
+
+function clear_modular_light(weapon)
+    if not weapon then
+        return
+    end
+    se_save_var(weapon:id(), weapon:name(), defaults().MODULAR_VAR, nil)
+end
+
+function modular_item_adapter(section, mount_class)
+    if not section then
+        return nil
+    end
+
+    local d = defaults()
+    local item_mount_class = utlf_parse.section_string(section, "mount_class", nil)
+    if not item_mount_class or item_mount_class == "" then
+        return nil
+    end
+
+    if mount_class and item_mount_class ~= mount_class then
+        return nil
+    end
+
+    local position = utlf_parse.vector3(utlf_parse.section_string(section, "adapter_position", nil), { x = 0, y = 0, z = 0 })
+    local rotation = utlf_parse.vector3(utlf_parse.section_string(section, "adapter_rotation", nil), { x = 0, y = 0, z = 0 })
+
+    return {
+        mount_class = item_mount_class,
+        x = position.x,
+        y = position.y,
+        z = position.z,
+        rx = rotation.x,
+        ry = rotation.y,
+        rz = rotation.z,
+        scale = utlf_parse.section_number(section, "adapter_scale", d.MODULAR_SCALE),
+        bone = utlf_parse.normalize_bone(utlf_parse.section_string(section, "adapter_bone", 0)),
+    }
+end
+
+function modular_attachment_model(section, profile)
+    local model = section and ini_sys:r_string_ex(section, "scripted_model")
+    model = model or (profile and profile.model) or defaults().MODULAR_MODEL
+    return strgsub(model, "%.ogf$", "")
+end

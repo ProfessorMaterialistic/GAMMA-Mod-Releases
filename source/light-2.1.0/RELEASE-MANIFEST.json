@@ -1,0 +1,23 @@
+{
+  "version": "2.1.0",
+  "tested_engine": {
+    "mt_test": "2026.08.04",
+    "xrCore": 10100,
+    "executable": "AnomalyDX11AVX.exe",
+    "sha256": "0646c34c555885c94345400401ed1d9169343f3961626f5bdff6c8d21442c7ef"
+  },
+  "packages": [
+    {
+      "archive": "One-Key-Light-v2.1.0.7z",
+      "sha256": "0a31e0b4db08fb5a4bd7795a39f88d3ebd66e2a8dbeb1c433b775713850be2b1",
+      "bytes": 99220,
+      "runtime_assets": 46
+    },
+    {
+      "archive": "Unified-Player-Light-Controls-v2.1.0.7z",
+      "sha256": "61c0f9d8951d1117a323f7318483c91e2a8a12aa073b8f2d30b0dce91a4ca14d",
+      "bytes": 78796,
+      "runtime_assets": 39
+    }
+  ]
+}

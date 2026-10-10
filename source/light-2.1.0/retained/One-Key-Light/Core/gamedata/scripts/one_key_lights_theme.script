@@ -1,0 +1,50 @@
+-- Presets affect this radial only. Charge colors remain semantic across themes.
+local presets={
+ {bg={18,23,25},hover={53,85,83},text={235,240,238},muted={173,184,184},on={75,255,135},auto={255,193,45},off={160,170,176}},
+ {bg={6,6,6},hover={80,80,80},text={255,255,255},muted={205,205,205},on={255,255,255},auto={170,170,170},off={90,90,90}},
+ {bg={230,234,238},hover={174,204,222},text={20,28,36},muted={62,73,83},on={0,112,45},auto={147,86,0},off={98,109,120}},
+ {bg={47,52,63},hover={69,93,129},text={221,228,240},muted={173,184,205},on={91,235,163},auto={255,199,90},off={140,152,174}},
+ {bg={30,33,25},hover={88,95,54},text={231,224,196},muted={182,180,151},on={156,245,88},auto={255,192,67},off={147,149,120}},
+}
+-- Faction-inspired accents; original five indices remain unchanged.
+local factions={
+ {190,151,74}, -- Loners
+ {151,112,76}, -- Bandits
+ {81,180,226}, -- Clear Sky
+ {224,65,65}, -- Duty
+ {123,201,73}, -- Freedom
+ {92,139,219}, -- Mercenaries
+ {146,163,88}, -- Military
+ {242,169,61}, -- Ecologists
+ {182,210,236}, -- Monolith
+ {191,128,69}, -- Renegades
+ {166,93,116}, -- Sin
+ {102,195,182}, -- UNISG
+ {154,153,112}, -- Zombified
+}
+for _,c in ipairs(factions) do
+ presets[#presets+1]={bg={math.floor(c[1]*.12),math.floor(c[2]*.12),math.floor(c[3]*.12)},hover={math.floor(c[1]*.45),math.floor(c[2]*.45),math.floor(c[3]*.45)},text={240,240,232},muted=c,on={75,255,135},auto={255,193,45},off={160,170,176}}
+end
+-- Universal additions preserve all legacy theme indices.
+local universal={
+ {{28,30,24},{82,89,51},{229,224,196},{175,179,154},{126,235,96},{255,190,64},{133,142,120}},
+ {{14,16,19},{47,53,60},{235,240,245},{162,173,186},{106,238,164},{246,191,92},{118,128,140}},
+ {{8,25,14},{25,77,43},{175,239,165},{108,169,104},{167,255,113},{247,216,105},{84,132,82}},
+ {{23,17,8},{83,61,23},{245,207,131},{185,154,95},{251,211,107},{255,170,51},{137,112,68}},
+ {{3,19,4},{13,61,14},{145,245,139},{78,162,73},{156,255,125},{223,247,97},{55,109,52}},
+ {{0,0,0},{26,30,33},{244,249,250},{155,170,174},{91,244,165},{250,192,71},{99,116,122}},
+ {{12,12,12},{54,54,54},{245,245,245},{173,173,173},{255,255,255},{201,201,201},{96,96,96}},
+}
+for _,p in ipairs(universal) do presets[#presets+1]={bg=p[1],hover=p[2],text=p[3],muted=p[4],on=p[5],auto=p[6],off=p[7]} end
+function count() return #presets end
+function get(index) return presets[tonumber(index) or 1] or presets[1] end
+function status(value)
+    return value==2 and {255,193,45} or value==1 and {75,255,135} or {160,170,176}
+end
+function argb(c,alpha) return GetARGB(alpha or 255,c[1],c[2],c[3]) end
+function battery(percent,colored,theme)
+    if not colored or percent==nil then return theme.muted end
+    if percent<=100/3 then return {255,75,75} end
+    if percent<=200/3 then return {255,213,45} end
+    return {74,230,108}
+end

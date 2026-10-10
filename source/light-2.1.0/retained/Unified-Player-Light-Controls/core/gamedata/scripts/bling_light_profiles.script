@@ -1,0 +1,102 @@
+-- Shared weapon-family identity and separately versioned Visible/IR defaults.
+local fields={weapon={"brightness","range","cone","r","g","b","aim_policy"},ir={"brightness","range","cone_deg","aim_policy"},laser={"brightness","dot_size","beam_brightness","beam_size","hue","no_laser_primary_aim","no_laser_alt_aim","policy"}}
+local function read(k,d) return unified_light_store.get(k,d) end
+local function write(k,v) unified_light_store.put(k,v) end
+local function prefix(mode,id) return "bling_light_profiles/"..mode.."/"..id.."/" end
+local family_cache={}
+function invalidate() family_cache={} end
+local function resolve_family(section)
+    if type(section)~="string" then return section end
+    -- Modular attachments retain their own identity.
+    if string.sub(section,1,4)~="wpn_" then return section end
+    local current=section;local seen={[current]=true}
+    for i=1,32 do
+        local parent=ini_sys:r_string_ex(current,"parent_section")
+        if not parent or parent=="" or parent==current then return current end
+        if seen[parent] then return section end -- malformed cycle: do not merge families
+        if string.sub(parent,1,4)~="wpn_" or not ini_sys:section_exist(parent) then return current end
+        seen[parent]=true;current=parent
+    end
+    return section
+end
+function family(section)
+    if not section then return end
+    if family_cache[section]==nil then family_cache[section]=resolve_family(section) end
+    return family_cache[section]
+end
+local values_cache={};local cache_generation=-1
+local function resolve(mode,id,key,default)
+    local raw=id;id=family(id)
+    local p=prefix(mode,id);local g=prefix(mode,"all")
+    local generation=read(g.."generation",0)
+    if read(p.."generation",0)>=generation then
+        local v=read(p..key,nil);if v~=nil then return v end
+    end
+    if generation>0 then return read(g..key,default) end
+    if mode=="weapon" then
+        local old="bling_player_lights/weapon/"
+        local v=read(old..id.."/"..key,nil)
+        if v==nil then v=read(old..raw.."/"..key,nil) end
+        if v~=nil then
+            return v
+        end
+    end
+    return default
+end
+function get(mode,id,key,default)
+    if cache_generation~=unified_light_store.generation then values_cache={};cache_generation=unified_light_store.generation end
+    local k=mode.."/"..tostring(id).."/"..key
+    local entry=values_cache[k]
+    if not entry then entry={value=resolve(mode,id,key,nil)};values_cache[k]=entry end
+    return entry.value~=nil and entry.value or default
+end
+local function put_fields(mode,id,values,defaults)
+    id=family(id);local p=prefix(mode,id)
+    local effective={}
+    for _,key in ipairs(fields[mode]) do
+        effective[key]=values[key]
+        if effective[key]==nil then effective[key]=get(mode,id,key,defaults and defaults[key]) end
+    end
+    for key,v in pairs(effective) do write(p..key,v) end
+    write(p.."generation",read(prefix(mode,"all").."generation",0))
+
+end
+function put(mode,id,values,defaults)
+    return unified_light_store.edit(function() put_fields(mode,id,values,defaults) end)
+end
+local function all_fields(mode,values)
+    local p=prefix(mode,"all")
+    for _,key in ipairs(fields[mode]) do assert(type(values[key])=="number","Missing global light field: "..key) end
+    for _,key in ipairs(fields[mode]) do write(p..key,values[key]) end
+    write(p.."generation",read(p.."generation",0)+1)
+end
+function apply_all(mode,values)
+    return unified_light_store.edit(function() all_fields(mode,values) end)
+end
+local hooked=false
+function install_ir()
+    if hooked or not utlf_ir_mode or type(utlf_ir_mode.get_ir_settings)~="function" then return end
+    local ir=utlf_ir_mode
+    local old_get,old_set,old_reset=ir.get_ir_settings,ir.set_ir_settings,ir.reset_ir_settings
+    ir.get_ir_settings=function(id,profile)
+        if not id then return nil end
+        local original=old_get(family(id),profile)
+        if not original then return nil end
+        -- Preserve metadata/defaults expected by the original UI/runtime.
+        local result={};for k,v in pairs(original) do result[k]=v end
+        for _,key in ipairs(fields.ir) do result[key]=get("ir",id,key,key=="aim_policy" and 0 or original[key]) end
+        result.section=family(id);return result
+    end
+    ir.set_ir_settings=function(id,range,cone,brightness)
+        if not id then return false end
+        put("ir",id,{range=math.max(5,math.min(100,range)),cone_deg=math.max(8,math.min(120,cone)),brightness=math.max(.25,math.min(2,brightness))},old_get(family(id)))
+        ir.apply_active_ir_settings();unified_lights.invalidate();return true
+    end
+    ir.reset_ir_settings=function(id,profile)
+        if not id then return false end
+        put("ir",id,{range=profile and profile.range or 30,cone_deg=profile and profile.cone_deg or 50,brightness=1,aim_policy=0})
+        ir.apply_active_ir_settings();unified_lights.invalidate();return true
+    end
+    hooked=true
+end
+function on_game_start() end

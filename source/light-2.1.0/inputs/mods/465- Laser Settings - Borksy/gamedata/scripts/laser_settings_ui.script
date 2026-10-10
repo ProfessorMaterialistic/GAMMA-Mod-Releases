@@ -1,0 +1,218 @@
+local GUI = nil
+
+class "LaserSettingsDialog" (CUIScriptWnd)
+
+function LaserSettingsDialog:__init() super()
+	self:InitControls()
+	self:InitCallbacks()
+end
+
+function LaserSettingsDialog:__finalize()
+	GUI = nil
+end
+
+function LaserSettingsDialog:InitControls()
+	self:SetWndRect(Frect():set(0, 0, 1024, 768))
+	self:SetAutoDelete(true)
+
+	local xml = CScriptXmlInit()
+	xml:ParseFile("ui_laser_settings.xml")
+
+	self.back = xml:InitStatic("background", self)
+	local caption = xml:InitStatic("caption", self.back)
+	caption:TextControl():SetText(game.translate_string("ui_laser_panel_title"))
+	self.weapon_name = xml:InitStatic("weapon_name", self.back)
+	self.parent_section_lbl = xml:InitStatic("lbl_parent_section", self.back)
+
+	local label_ids = {
+		brightness = "ui_laser_panel_brightness",
+		dot_size = "ui_laser_panel_dot_size",
+		beam_brightness = "ui_laser_panel_beam_brightness",
+		beam_size = "ui_laser_panel_beam_size",
+		hue = "ui_laser_panel_hue",
+	}
+
+	self.track_defs = {
+		{name = "brightness",      key = "brightness",      min = 0.1, max = 5.0, step = 0.1},
+		{name = "dot_size",        key = "dot_size",        min = 1.0, max = 5.0, step = 0.5},
+		{name = "beam_brightness", key = "beam_brightness", min = 0.1, max = 5.0, step = 0.1},
+		{name = "beam_size",       key = "beam_size",       min = 1.0, max = 5.0, step = 0.1},
+		{name = "hue",             key = "hue",             min = 0,   max = 100, step = 1},
+	}
+
+	self.tracks = {}
+	for _, def in ipairs(self.track_defs) do
+		local lbl = xml:InitStatic("lbl_" .. def.name, self.back)
+		lbl:TextControl():SetText(game.translate_string(label_ids[def.name]))
+		local track = xml:InitTrackBar("track_" .. def.name, self.back)
+		track:SetOptFBounds(def.min, def.max)
+		track:SetStep(def.step)
+		local val_txt = xml:InitTextWnd("val_" .. def.name, self.back)
+		self.tracks[def.name] = {
+			ctrl = track,
+			txt = val_txt,
+			key = def.key,
+		}
+	end
+
+	local lbl_primary = xml:InitStatic("lbl_hide_primary", self.back)
+	lbl_primary:TextControl():SetText(game.translate_string("ui_laser_panel_hide_primary"))
+	self.chk_hide_primary = xml:InitCheck("chk_hide_primary", self.back)
+	local lbl_alt = xml:InitStatic("lbl_hide_alt", self.back)
+	lbl_alt:TextControl():SetText(game.translate_string("ui_laser_panel_hide_alt"))
+	self.chk_hide_alt = xml:InitCheck("chk_hide_alt", self.back)
+
+	self.btn_reset = xml:Init3tButton("btn_reset", self.back)
+	self.btn_reset:TextControl():SetText(game.translate_string("ui_laser_panel_reset"))
+	self:Register(self.btn_reset, "btn_reset")
+
+	self.btn_export = xml:Init3tButton("btn_export", self.back)
+	self.btn_export:TextControl():SetText(game.translate_string("ui_laser_panel_export"))
+	self:Register(self.btn_export, "btn_export")
+
+	self.btn_close = xml:Init3tButton("btn_close", self.back)
+	self.btn_close:TextControl():SetText(game.translate_string("ui_laser_panel_close"))
+	self:Register(self.btn_close, "btn_close")
+end
+
+function LaserSettingsDialog:InitCallbacks()
+	self:AddCallback("btn_close", ui_events.BUTTON_CLICKED, self.Close, self)
+	self:AddCallback("btn_reset", ui_events.BUTTON_CLICKED, self.Reset, self)
+	self:AddCallback("btn_export", ui_events.BUTTON_CLICKED, self.ExportToDefaults, self)
+end
+
+function LaserSettingsDialog:ShowForWeapon(section, wpn_name)
+	self.wpn_section = section
+	self.weapon_name:TextControl():SetText(wpn_name)
+
+	local parent = ini_sys:r_string_ex(section, "parent_section") or section
+
+	local debug_on = zzz_bas_laser_control.opt_debug_mode
+	self.btn_export:Show(debug_on)
+	self.parent_section_lbl:Show(debug_on)
+	if debug_on then
+		self.parent_section_lbl:TextControl():SetText("Parent: " .. parent)
+	end
+
+	local cfg = zzz_bas_laser_control.get_weapon_cfg(section)
+
+	for _, def in ipairs(self.track_defs) do
+		local t = self.tracks[def.name]
+		local val = cfg[t.key] or 1.0
+		t.ctrl:SetFValue(val)
+		t.txt:SetText(string.format("%.1f", val))
+	end
+
+	local hide_primary = cfg.no_laser_primary_aim
+	if hide_primary == nil then hide_primary = zzz_bas_laser_control.opt_no_laser_primary_aim end
+	self.chk_hide_primary:SetCheck(hide_primary)
+
+	local hide_alt = cfg.no_laser_alt_aim
+	if hide_alt == nil then hide_alt = zzz_bas_laser_control.opt_no_laser_alt_aim end
+	self.chk_hide_alt:SetCheck(hide_alt)
+
+	self:ShowDialog(true)
+	Register_UI("LaserSettingsDialog", "laser_settings_ui")
+end
+
+function LaserSettingsDialog:Update()
+	CUIScriptWnd.Update(self)
+	if not self:IsShown() then return end
+
+	local changed = false
+	local cfg = zzz_bas_laser_control.get_weapon_cfg(self.wpn_section)
+	local new_cfg = {}
+
+	for _, def in ipairs(self.track_defs) do
+		local t = self.tracks[def.name]
+		local val = t.ctrl:GetFValue()
+		t.txt:SetText(string.format("%.1f", val))
+		new_cfg[t.key] = val
+		if math.abs(val - (cfg[t.key] or 0)) > 0.001 then
+			changed = true
+		end
+	end
+
+	new_cfg.no_laser_primary_aim = self.chk_hide_primary:GetCheck()
+	new_cfg.no_laser_alt_aim = self.chk_hide_alt:GetCheck()
+
+	local eff_primary = cfg.no_laser_primary_aim
+	if eff_primary == nil then eff_primary = zzz_bas_laser_control.opt_no_laser_primary_aim end
+	local eff_alt = cfg.no_laser_alt_aim
+	if eff_alt == nil then eff_alt = zzz_bas_laser_control.opt_no_laser_alt_aim end
+	if new_cfg.no_laser_primary_aim ~= eff_primary or new_cfg.no_laser_alt_aim ~= eff_alt then
+		changed = true
+	end
+
+	if changed then
+		zzz_bas_laser_control.set_weapon_cfg(self.wpn_section, new_cfg)
+		zzz_bas_laser_control.set_laser(1, self.wpn_section)
+	end
+end
+
+function LaserSettingsDialog:Reset()
+	zzz_bas_laser_control.clear_weapon_cfg(self.wpn_section)
+	local cfg = zzz_bas_laser_control.get_weapon_cfg(self.wpn_section)
+	for _, def in ipairs(self.track_defs) do
+		local t = self.tracks[def.name]
+		local val = cfg[t.key] or 1.0
+		t.ctrl:SetFValue(val)
+		t.txt:SetText(string.format("%.1f", val))
+	end
+	local hide_primary = cfg.no_laser_primary_aim
+	if hide_primary == nil then hide_primary = zzz_bas_laser_control.opt_no_laser_primary_aim end
+	self.chk_hide_primary:SetCheck(hide_primary)
+	local hide_alt = cfg.no_laser_alt_aim
+	if hide_alt == nil then hide_alt = zzz_bas_laser_control.opt_no_laser_alt_aim end
+	self.chk_hide_alt:SetCheck(hide_alt)
+	zzz_bas_laser_control.set_laser(1, self.wpn_section)
+end
+
+function LaserSettingsDialog:ExportToDefaults()
+	local ok, target = zzz_bas_laser_control.export_to_defaults(self.wpn_section)
+	if ok then
+		local msg = string.format(game.translate_string("ui_laser_panel_exported"), target)
+		news_manager.send_tip(db.actor, msg, nil, nil, 5000)
+		self:Reset()
+	end
+end
+
+function LaserSettingsDialog:OnKeyboard(dik, keyboard_action)
+	local res = CUIScriptWnd.OnKeyboard(self, dik, keyboard_action)
+	if res == false then
+		if keyboard_action == ui_events.WINDOW_KEY_PRESSED then
+			if dik == DIK_keys.DIK_ESCAPE or dik == zzz_bas_laser_control.opt_config_key then
+				self:Close()
+			end
+		end
+	end
+	return res
+end
+
+function LaserSettingsDialog:Close()
+	zzz_bas_laser_control.flush_user_cfg()
+	if self:IsShown() then
+		self:HideDialog()
+	end
+	Unregister_UI("LaserSettingsDialog")
+end
+
+function open_dialog()
+	local wpn = db.actor and db.actor:active_item()
+	local section = wpn and wpn:section()
+	if not section or not zzz_bas_laser_control.has_laser(section) then
+		return
+	end
+
+	local inv_name = ini_sys:r_string_ex(section, "inv_name")
+	local wpn_name = game.translate_string(inv_name or section)
+
+	if GUI and GUI:IsShown() then
+		GUI:Close()
+		return
+	end
+	if not GUI then
+		GUI = LaserSettingsDialog()
+	end
+	GUI:ShowForWeapon(section, wpn_name)
+end

@@ -1,0 +1,531 @@
+local updated = 0
+local interval = 250
+local saved_lasers = {}
+local pending_cfg = {}
+local last_laser_section = nil
+local cached_param_6 = nil
+local snd_laser = sound_object("interface\\inv_torch")
+local defaults_ini = nil
+local user_cache = {}
+local user_ltx_path = nil
+
+local FALLBACK = {
+	brightness = 1.0,
+	dot_size = 1.0,
+	beam_brightness = 1.0,
+	beam_size = 1.0,
+	hue = 0,
+}
+
+local VISUAL_KEYS = {"brightness", "dot_size", "beam_brightness", "beam_size", "hue"}
+local BOOL_KEYS = {"no_laser_primary_aim", "no_laser_alt_aim"}
+
+opt_no_laser_primary_aim = true
+opt_no_laser_alt_aim = true
+opt_config_key = DIK_keys.DIK_P
+opt_dist_bright = true
+opt_dist_size = true
+opt_debug_mode = false
+opt_use_mcm_defaults = false
+opt_mcm_brightness = 1.0
+opt_mcm_dot_size = 1.0
+opt_mcm_beam_brightness = 1.0
+opt_mcm_beam_size = 1.0
+opt_mcm_hue = 0
+
+local function load_defaults_ini()
+	defaults_ini = ini_file("laser_settings_defaults.ltx")
+end
+
+local function resolve_user_ltx_path()
+	local fs = getFS()
+	local cfg_path = fs:update_path("$game_config$", "")
+	user_ltx_path = cfg_path .. "laser_settings_user.ltx"
+end
+
+local function parse_ltx_file(path)
+	local sections = {}
+	local f = io.open(path, "r")
+	if not f then return sections end
+	local current
+	for line in f:lines() do
+		local sec = line:match("^%[(.-)%]")
+		if sec then
+			current = sec
+			sections[current] = sections[current] or {}
+		elseif current then
+			local k, v = line:match("^%s*(%S+)%s*=%s*(.+)")
+			if k and v then
+				sections[current][k] = v
+			end
+		end
+	end
+	f:close()
+	return sections
+end
+
+local function write_ltx_file(path, sections)
+	if not path then return false end
+	local f = io.open(path, "w")
+	if not f then return false end
+	for sec, keys in pairs(sections) do
+		local has_keys = false
+		for _ in pairs(keys) do has_keys = true break end
+		if has_keys then
+			f:write("[" .. sec .. "]\n")
+			for k, v in pairs(keys) do
+				f:write("\t" .. k .. " = " .. tostring(v) .. "\n")
+			end
+			f:write("\n")
+		end
+	end
+	f:close()
+	return true
+end
+
+local function load_user_cache()
+	user_cache = {}
+	local raw = parse_ltx_file(user_ltx_path)
+	for sec, keys in pairs(raw) do
+		user_cache[sec] = {}
+		for k, v in pairs(keys) do
+			local is_bool = false
+			for _, bk in ipairs(BOOL_KEYS) do
+				if k == bk then is_bool = true break end
+			end
+			if is_bool then
+				user_cache[sec][k] = v == "true"
+			else
+				user_cache[sec][k] = tonumber(v) or v
+			end
+		end
+	end
+end
+
+local function read_ini_cfg(ini, section)
+	if not ini then return nil end
+	if not ini:section_exist(section) then return nil end
+	local cfg = {}
+	local found = false
+	for _, key in ipairs(VISUAL_KEYS) do
+		local val = ini:r_float_ex(section, key)
+		if val then
+			cfg[key] = val
+			found = true
+		end
+	end
+	for _, key in ipairs(BOOL_KEYS) do
+		local val = ini:r_string_ex(section, key)
+		if val ~= nil then
+			cfg[key] = val == "true"
+			found = true
+		end
+	end
+	return found and cfg or nil
+end
+
+local function resolve_parent_chain(section)
+	local chain = {section}
+	local seen = {[section] = true}
+	local current = section
+	while true do
+		local parent = ini_sys:r_string_ex(current, "parent_section")
+		if not parent or parent == current or seen[parent] then break end
+		seen[parent] = true
+		table.insert(chain, parent)
+		current = parent
+	end
+	return chain
+end
+
+local function resolve_storage_section(section)
+	local parent = ini_sys:r_string_ex(section, "parent_section")
+	if parent and parent ~= section then
+		return parent
+	end
+	return section
+end
+
+function get_weapon_cfg(section)
+	if not section then return dup_table(FALLBACK) end
+
+	local chain = resolve_parent_chain(section)
+	local merged = dup_table(FALLBACK)
+
+	local def_cfg = read_ini_cfg(defaults_ini, "defaults")
+	if def_cfg then
+		for k, v in pairs(def_cfg) do merged[k] = v end
+	end
+
+	for i = #chain, 1, -1 do
+		local cfg = read_ini_cfg(defaults_ini, chain[i])
+		if cfg then
+			for k, v in pairs(cfg) do merged[k] = v end
+		end
+	end
+
+	if opt_use_mcm_defaults then
+		merged.brightness = opt_mcm_brightness
+		merged.dot_size = opt_mcm_dot_size
+		merged.beam_brightness = opt_mcm_beam_brightness
+		merged.beam_size = opt_mcm_beam_size
+		merged.hue = opt_mcm_hue
+	end
+
+	for i = #chain, 1, -1 do
+		if user_cache[chain[i]] then
+			for k, v in pairs(user_cache[chain[i]]) do merged[k] = v end
+		end
+	end
+
+	for i = #chain, 1, -1 do
+		if pending_cfg[chain[i]] then
+			for k, v in pairs(pending_cfg[chain[i]]) do merged[k] = v end
+		end
+	end
+
+	return merged
+end
+
+function set_weapon_cfg(section, cfg)
+	local target = resolve_storage_section(section)
+	pending_cfg[target] = cfg
+	cached_param_6 = nil
+end
+
+local function read_user_sections()
+	return parse_ltx_file(user_ltx_path)
+end
+
+local function write_user_sections(sections)
+	if not write_ltx_file(user_ltx_path, sections) then
+		printf("!Laser Settings: failed to write %s", tostring(user_ltx_path))
+	end
+end
+
+function flush_user_cfg()
+	if not next(pending_cfg) then return end
+	local sections = read_user_sections()
+	for section, cfg in pairs(pending_cfg) do
+		sections[section] = sections[section] or {}
+		user_cache[section] = user_cache[section] or {}
+		for _, key in ipairs(VISUAL_KEYS) do
+			if cfg[key] ~= nil then
+				sections[section][key] = cfg[key]
+				user_cache[section][key] = cfg[key]
+			end
+		end
+		for _, key in ipairs(BOOL_KEYS) do
+			if cfg[key] ~= nil then
+				sections[section][key] = cfg[key]
+				user_cache[section][key] = cfg[key]
+			end
+		end
+	end
+	write_user_sections(sections)
+	pending_cfg = {}
+end
+
+function clear_weapon_cfg(section)
+	local target = resolve_storage_section(section)
+	pending_cfg[target] = nil
+	user_cache[target] = nil
+	local sections = read_user_sections()
+	sections[target] = nil
+	write_user_sections(sections)
+	cached_param_6 = nil
+end
+
+local function read_defaults_sections()
+	local fs = getFS()
+	local path = fs:update_path("$game_config$", "") .. "laser_settings_defaults.ltx"
+	return parse_ltx_file(path), path
+end
+
+function export_to_defaults(section)
+	local cfg = get_weapon_cfg(section)
+	local has_values = false
+	for _, key in ipairs(VISUAL_KEYS) do
+		if cfg[key] ~= nil then has_values = true break end
+	end
+	if not has_values then return false end
+
+	local chain = resolve_parent_chain(section)
+	local target = chain[#chain]
+	local sections, path = read_defaults_sections()
+	sections[target] = sections[target] or {}
+	for _, key in ipairs(VISUAL_KEYS) do
+		if cfg[key] ~= nil then
+			sections[target][key] = cfg[key]
+		end
+	end
+	for _, key in ipairs(BOOL_KEYS) do
+		if cfg[key] ~= nil then
+			sections[target][key] = cfg[key]
+		end
+	end
+	if not write_ltx_file(path, sections) then return false end
+	load_defaults_ini()
+
+	clear_weapon_cfg(section)
+	return true, target
+end
+
+local CloneWep = _G.alife_clone_weapon
+function _G.alife_clone_weapon(se_obj, section, parent_id)
+	local old_id = se_obj.id
+	local new_wep = CloneWep(se_obj, section, parent_id)
+	local new_id = new_wep and new_wep.id
+	if new_id and saved_lasers[old_id] then
+		saved_lasers[new_id] = saved_lasers[old_id]
+		saved_lasers[old_id] = nil
+	end
+	return new_wep
+end
+
+local function clamp(v, lo, hi)
+	if v < lo then return lo end
+	if v > hi then return hi end
+	return v
+end
+
+local function build_shader_params(cfg)
+	local dot_br = clamp(cfg.brightness or 1.0, 0.1, 5.0)
+	local beam_br = clamp(cfg.beam_brightness or 1.0, 0.1, 5.0)
+	local h = clamp(cfg.hue or 0, 0, 100)
+	local ds = clamp(cfg.dot_size or 1.0, 1.0, 5.0)
+	local bs = clamp(cfg.beam_size or 1.0, 1.0, 5.0)
+
+	if not opt_dist_bright then
+		dot_br = -dot_br
+	end
+
+	if not opt_dist_size then
+		beam_br = -beam_br
+	end
+
+	local ds_idx = clamp(math.floor((ds - 0.5) / 0.5 + 0.5), 0, 9)
+	local w = ds_idx * 10 + bs
+
+	cached_param_6 = string.format("shader_param_6 %.1f, %.1f, %d, %.2f", dot_br, beam_br, h, w)
+end
+
+local function send_shader_params()
+	exec_console_cmd(cached_param_6)
+end
+
+function actor_on_update()
+	if not db.actor then return end
+	local now = time_global()
+	if now < updated then return end
+	updated = now + interval
+
+	local wpn = db.actor:active_item()
+	local section = wpn and wpn:section()
+	local wpn_id = wpn and wpn:id()
+	if not (section and has_laser(section)) then return end
+
+	if wpn_id and saved_lasers[wpn_id] ~= nil then
+		local cfg = get_weapon_cfg(section)
+		local hide_primary = cfg.no_laser_primary_aim
+		if hide_primary == nil then hide_primary = opt_no_laser_primary_aim end
+		local hide_alt = cfg.no_laser_alt_aim
+		if hide_alt == nil then hide_alt = opt_no_laser_alt_aim end
+		local wpn_cast = wpn:cast_Weapon()
+		if wpn_cast:IsZoomed() and ((wpn_cast:GetZoomType() == 0 and hide_primary) or (wpn_cast:GetZoomType() == 1 and hide_alt)) then
+			set_laser(0)
+		else
+			set_laser(saved_lasers[wpn_id] and 1 or 0, section)
+		end
+	else
+		saved_lasers[wpn_id] = false
+		set_laser(0)
+	end
+end
+
+local TorchToggle = actor_effects.Hit_TorchToggle
+function actor_effects.Hit_TorchToggle()
+	local wpn = db.actor and db.actor:active_item()
+	local section = wpn and wpn:section()
+	if section and has_laser(section) then
+		return
+	end
+	TorchToggle()
+end
+
+local laser_change_state = false
+local last_config_toggle = 0
+
+local function try_open_settings(source)
+	if device():is_paused() or not actor_menu.is_hud_free() then
+		return
+	end
+
+	local now = time_global()
+	if now - last_config_toggle < 100 then
+		return
+	end
+	last_config_toggle = now
+
+	local ok, err = pcall(laser_settings_ui.open_dialog)
+	if not ok then
+		printf("!Laser Settings [%s]: %s", tostring(source), tostring(err))
+	end
+end
+
+function on_key_press(key)
+	if not db.actor then return end
+
+	if key == opt_config_key then
+		try_open_settings("on_key_press")
+		return
+	end
+
+	local bind = dik_to_bind(key)
+	if bind ~= key_bindings.kTORCH then return end
+	if not actor_menu.is_hud_free() or device():is_paused() then
+		TorchToggle()
+		return
+	end
+	local wpn = db.actor:active_item()
+	local section = wpn and wpn:section()
+	local w_id = wpn and wpn:id()
+	if not section then TorchToggle() return end
+	if not w_id then TorchToggle() return end
+	if not has_laser(section) then TorchToggle() return end
+	local state = wpn:get_state()
+	if state ~= 0 then TorchToggle() return end
+	CreateTimeEvent("haruka_hold", "haruka_long_hold", 0.5, function()
+		laser_change_state = true
+		toggle_laser(w_id)
+		return true
+	end)
+end
+
+function on_key_release(key)
+	if not db.actor then return end
+	local bind = dik_to_bind(key)
+	if bind ~= key_bindings.kTORCH then return end
+	RemoveTimeEvent("haruka_hold", "haruka_long_hold")
+
+	if not laser_change_state then
+		TorchToggle()
+	end
+
+	laser_change_state = false
+end
+
+function on_before_key_press(key, bind, dis, flags)
+	if key ~= opt_config_key then
+		return
+	end
+
+	if flags then
+		flags.ret_value = false
+	end
+
+	try_open_settings("on_before_key_press")
+end
+
+local laser_cache = {}
+
+function has_laser(section)
+	local cached = laser_cache[section]
+	if cached ~= nil then return cached end
+	cached = ini_sys:r_bool_ex(section, "laser_status", false)
+	laser_cache[section] = cached
+	return cached
+end
+
+function toggle_laser(id)
+	level.add_cam_effector("camera_effects\\weapon\\ak74_switch_off.anm", 9342, false, '')
+
+	CreateTimeEvent("haruka_laser", "haruka_laser", 0.1, function()
+		if saved_lasers[id] ~= nil then
+			saved_lasers[id] = not saved_lasers[id]
+		else
+			saved_lasers[id] = true
+		end
+
+		snd_laser:play(db.actor, 0, sound_object.s2d)
+		snd_laser.frequency = saved_lasers[id] and 1.15 or 0.85
+
+		local wpn = level.object_by_id(id)
+		local section = wpn and wpn:section()
+		set_laser(saved_lasers[id] and 1 or 0, section)
+
+		return true
+	end)
+end
+
+function set_laser(on_off, section)
+	if on_off == 0 then
+		last_laser_section = nil
+		cached_param_6 = nil
+		exec_console_cmd("shader_param_6 0, 0, 0, 0")
+		return
+	end
+	if section == last_laser_section and cached_param_6 then
+		send_shader_params()
+		return
+	end
+	last_laser_section = section
+	local cfg = get_weapon_cfg(section)
+	build_shader_params(cfg)
+	send_shader_params()
+end
+
+function load_settings()
+	if ui_mcm then
+		opt_no_laser_primary_aim = ui_mcm.get("laser_settings/no_laser_primary_aim")
+		opt_no_laser_alt_aim = ui_mcm.get("laser_settings/no_laser_alt_aim")
+		opt_dist_bright = ui_mcm.get("laser_settings/dist_bright")
+		opt_dist_size = ui_mcm.get("laser_settings/dist_size")
+		opt_config_key = ui_mcm.get("laser_settings/config_key") or opt_config_key
+		opt_debug_mode = ui_mcm.get("laser_settings/debug_mode")
+		opt_use_mcm_defaults = ui_mcm.get("laser_settings/use_mcm_defaults")
+		opt_mcm_brightness = ui_mcm.get("laser_settings/mcm_brightness") or 1.0
+		opt_mcm_dot_size = ui_mcm.get("laser_settings/mcm_dot_size") or 1.0
+		opt_mcm_beam_brightness = ui_mcm.get("laser_settings/mcm_beam_brightness") or 1.0
+		opt_mcm_beam_size = ui_mcm.get("laser_settings/mcm_beam_size") or 1.0
+		opt_mcm_hue = ui_mcm.get("laser_settings/mcm_hue") or 0
+	end
+	cached_param_6 = nil
+	if last_laser_section then
+		local cfg = get_weapon_cfg(last_laser_section)
+		build_shader_params(cfg)
+		send_shader_params()
+	end
+end
+
+function save_state(m_data)
+	flush_user_cfg()
+	m_data.saved_lasers_id = saved_lasers
+end
+
+function load_state(m_data)
+	saved_lasers = m_data.saved_lasers_id or m_data.saved_lasers or {}
+	pending_cfg = {}
+	load_user_cache()
+end
+
+function on_slot_changed(new_slot, new_obj, prev_slot, prev_obj)
+	last_laser_section = nil
+	cached_param_6 = nil
+	exec_console_cmd("shader_param_6 0, 0, 0, 0")
+end
+
+function on_game_start()
+	resolve_user_ltx_path()
+	load_defaults_ini()
+	load_user_cache()
+	RegisterScriptCallback("on_before_key_press", on_before_key_press)
+	RegisterScriptCallback("on_key_press", on_key_press)
+	RegisterScriptCallback("on_key_release", on_key_release)
+	RegisterScriptCallback("save_state", save_state)
+	RegisterScriptCallback("load_state", load_state)
+	RegisterScriptCallback("actor_on_update", actor_on_update)
+	RegisterScriptCallback("actor_on_first_update", load_settings)
+	RegisterScriptCallback("on_option_change", load_settings)
+	RegisterScriptCallback("actor_on_changed_slot", on_slot_changed)
+end

@@ -1,0 +1,161 @@
+local notice=""
+local busy=false
+local function location()
+    return getFS():update_path("$app_data_root$","one_key_light_controls_torch_backup.txt")
+end
+local function current()
+    local result={}
+    for slot=0,1 do
+        local dik=bind_to_dik(key_bindings.kTORCH,slot)
+        result[slot+1]={dik=dik,name=dik~=0 and dik_to_keyname(dik,false) or "-"}
+    end
+    return result
+end
+local function read_backup(path)
+    local f=io.open(path,"r")
+    if not f then return end
+    local a,b,mode=f:read("*l"),f:read("*l"),f:read("*l"); f:close()
+    if not a or not b or not a:match("^[%w_%-]+$") or not b:match("^[%w_%-]+$") then return end
+    -- Two-line backups from earlier releases mean the player chose Clear.
+    if mode==nil then mode="disabled" end
+    if mode~="disabled" and mode~="restored" then return end
+    return {a,b,mode=mode}
+end
+local function backup()
+    return read_backup(location()) or read_backup(location()..".previous")
+end
+local function write_backup(saved,mode)
+    local path=location()
+    local temp=path..".tmp"
+    local f=io.open(temp,"w")
+    if not f then return false end
+    local wrote=f:write(saved[1].."\n"..saved[2].."\n"..mode.."\n")
+    local closed=f:close()
+    local check=read_backup(temp)
+    if not (wrote and closed and check and check[1]==saved[1] and check[2]==saved[2] and check.mode==mode) then return false end
+    local old=io.open(path,"r")
+    if old then
+        old:close()
+        os.remove(path..".previous")
+        if not os.rename(path,path..".previous") then return false end
+    end
+    if not os.rename(temp,path) then
+        if old then os.rename(path..".previous",path) end
+        return false
+    end
+    check=read_backup(path)
+    return check and check[1]==saved[1] and check[2]==saved[2] and check.mode==mode
+end
+local function unbind()
+    get_console():execute("unbind torch")
+    get_console():execute("unbind_sec torch")
+    local after=current()
+    return after[1].dik==0 and after[2].dik==0
+end
+local function restore_slots(saved)
+    for i=1,2 do
+        local suffix=i==2 and "_sec" or ""
+        get_console():execute("unbind"..suffix.." torch")
+        if saved[i]~="-" then get_console():execute("bind"..suffix.." torch "..saved[i]) end
+    end
+end
+local function refresh()
+    one_key_lights_mcm.refresh_status()
+end
+function enforce()
+    if busy then return end
+    local saved=backup()
+    if not saved or saved.mode~="disabled" then return end
+    busy=true
+    local ok,result=pcall(function()
+        local now=current()
+        if now[1].dik==0 and now[2].dik==0 then return true end
+        return unbind()
+    end)
+    busy=false
+    if not ok or not result then notice="Could not clear Torch; saved disable preference retained." end
+end
+function clear()
+    busy=true
+    local ok,err=pcall(function()
+        local slots=current()
+        local saved=backup()
+        if not saved or saved.mode=="restored" then
+            saved={slots[1].name,slots[2].name}
+            if not write_backup(saved,"disabled") then
+                notice="Cannot save disable preference; bindings unchanged."; return
+            end
+        end
+        -- Never replace the original keys with a default rebound on restart.
+        if not unbind() then notice="Unbind failed; original keys and disable preference retained."; return end
+        notice="Torch stays unbound across restarts until Restore is used."
+    end)
+    busy=false
+    if not ok then notice="Binding operation failed: "..tostring(err) end
+    refresh()
+end
+function restore()
+    busy=true
+    local ok,err=pcall(function()
+        local saved=backup()
+        if not saved or saved.mode=="restored" then notice="No pending Torch binding to restore."; return end
+        local now=current()
+        for i=1,2 do
+            if now[i].name~="-" and now[i].name~=saved[i] then
+                notice="Torch was rebound manually; clear it in Controls before restoring."; return
+            end
+        end
+        for i=1,2 do
+            local name=saved[i]
+            if name~="-" then
+                local found=false
+                for dik=1,DIK_keys.MOUSE_8 do
+                    if dik_to_keyname(dik,false)==name then
+                        found=true
+                        local action=dik_to_bind(dik)
+                        if action~=dik_to_bind(1000) and action~=key_bindings.kTORCH then
+                            notice="Saved key belongs to another command; free it in Controls first."; return
+                        end
+                        break
+                    end
+                end
+                if not found then notice="Saved key is unknown; no change made."; return end
+            end
+        end
+        restore_slots(saved)
+        local after=current()
+        if after[1].name~=saved[1] or after[2].name~=saved[2] then
+            notice="Restore verification failed; disable preference retained."; return
+        end
+        -- Retain the keys, but explicitly stop enforcing the disable preference.
+        -- A tombstone avoids treating a leftover backup as a fresh disable request.
+        if not write_backup(saved,"restored") then
+            notice="Could not save Restore preference; retry Restore before restarting."; return
+        end
+        notice="Previous bindings restored; persistent disabling is off."
+    end)
+    busy=false
+    if not ok then notice="Binding operation failed: "..tostring(err) end
+    refresh()
+end
+function status()
+    local ok,result=pcall(function()
+        local slots=current()
+        local key=one_key_lights_input.settings().key
+        local conflict=key~=0 and (slots[1].dik==key or slots[2].dik==key)
+        local saved=backup()
+        local policy=saved and saved.mode=="disabled" and "Persistent disable: ON" or "Persistent disable: OFF"
+        return "Torch: "..(slots[1].name=="-" and "Unbound" or slots[1].name).." / "..(slots[2].name=="-" and "Unbound" or slots[2].name).."\n"..(conflict and "WARNING: Binding conflict detected." or "No Conflict").."\n"..policy.."\n"..notice
+    end)
+    return ok and result or "Torch: Unknown (binding API unavailable)"
+end
+function status_lines()
+    local result={}
+    for line in status():gmatch("[^\n]+") do result[#result+1]=line end
+    return result
+end
+function on_game_start()
+    enforce()
+    RegisterScriptCallback("actor_on_first_update",enforce)
+    RegisterScriptCallback("on_option_change",enforce)
+end

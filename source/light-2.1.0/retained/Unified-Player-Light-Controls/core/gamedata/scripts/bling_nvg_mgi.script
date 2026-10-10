@@ -1,0 +1,30 @@
+-- Launch upstream NVG controls; never duplicate their tuning or keybindings.
+local files
+local function present(name)
+    if not files then
+        files={}
+        local list=getFS():file_list_open_ex("$game_scripts$",bit_or(FS.FS_ListFiles,FS.FS_RootOnly),"*.script")
+        for i=0,list:Size()-1 do files[list:GetAt(i):NameShort()]=true end
+    end
+    return files[name..".script"]==true
+end
+function open_tuning()
+    if not present("z_beefs_nvgs_ui") then return end
+    if not item_device or not item_device.nv_state then
+        if db.actor then news_manager.send_tip(db.actor,"Deploy your NVGs first to open Better Beef's live tuning.",nil,nil,5000) end
+        return
+    end
+    z_beefs_nvgs_ui.open_dialog()
+end
+local registered=false
+function register()
+    if registered then return end
+    local MGI=light_compat.module("mgi") or light_compat.module("MGI")
+    if not MGI or not MGI.register_gui then return end
+    if present("z_beefs_nvgs_ui") then
+        registered=MGI.register_gui({id="bling_better_beef_nvg",name="Beef's NVG Live Settings",author="Bling",version="2.1.0",category="Lighting",order=500,
+            description="Deploy NVGs, then open Better Beef's original tuning window.",ui={open_dialog=open_tuning}})
+    end
+end
+
+function on_game_start() end
