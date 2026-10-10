@@ -26,7 +26,7 @@ TESTED and FINAL-FOR-NOW do not authorize a public write or release. Diagnostic 
 
 ## Naming and contents
 
-Preferred future tags: `one-key-light-v2.0.0`, `unified-player-light-controls-v2.0.0`, `beefs-nvg-agc-v0.4.0`, `grenades-expanded-v0.1.0`. RC example: `one-key-light-v2.0.0-rc.1`. These are naming examples, not existing releases or permission to create tags.
+Preferred future tags: `one-key-light-v2.1.0`, `unified-player-light-controls-v2.1.0`, `beefs-nvg-agc-v0.4.0`, `grenades-expanded-v0.1.0`. RC example: `one-key-light-v2.1.0-rc.1`. These are naming examples, not existing releases or permission to create tags.
 
 Use a clean mod archive, versioned release notes, feature overview, required/optional dependencies, verified MO2 order, install/configuration/update/uninstall instructions, compatibility, known issues, credits/notices and SHA-256 when useful. Keep large archives out of ordinary Git history; use GitHub Releases only with specific authorization.
 
@@ -37,3 +37,9 @@ See [release workflow](docs/RELEASE-WORKFLOW.md) and [Light component review](do
 ## 2026-10-04 initial Light publication
 
 The owner explicitly authorized initial One Key Light 2.0 and Unified Player Light Controls 2.0 publication in this task. Redistribution review currently holds both uploads. No other mod, engine binary or PDB is authorized. Future public changes, including 2.0.1/2.1, still require new current-task authorization.
+
+## October 10 coordinated Light 2.1.0 preparation
+
+The owner authorizes this task’s Light 2.1.0 public documentation and releases
+subject to gates. Both archives remain held for exact inherited rights. No release
+tags/assets are created until clearance; no other project publication is authorized.

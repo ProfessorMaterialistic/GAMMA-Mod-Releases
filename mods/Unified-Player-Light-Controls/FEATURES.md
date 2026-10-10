@@ -1,4 +1,4 @@
-# Unified Player Light Controls 2.0 features and configuration
+# Unified Player Light Controls 2.1.0 features and configuration
 
 [Overview](README.md) · [Installation](INSTALL.md) · [Requirements](COMPATIBILITY.md)
 
@@ -48,10 +48,10 @@ Availability depends on the selected backend and separately installed dependency
 
 ## With One Key / without One Key
 
-One Key controls gestures and menu; Unified owns advanced modes and reconciliation. Use matching 2.0 versions and matching FOMOD selections. Either companion order works when shared files match. One Key is optional; no third core is required. Removing Unified leaves One Key standalone OFF/ON; removing One Key leaves Unified usable through native/device controls and optional MGI.
+One Key controls gestures and menu; Unified owns advanced modes and reconciliation. Use matching 2.1.0 versions and matching FOMOD selections. Either companion order works when shared files match. One Key is optional; no third core is required. Removing Unified leaves One Key standalone OFF/ON; removing One Key leaves Unified usable through native/device controls and optional MGI.
 
 ## Limits, issues and help
 
-The exact declared engine baseline and conditional dependencies are in [compatibility](COMPATIBILITY.md). Other engine builds/variants are unverified; the newer Auto NVG test baseline is not a Light compatibility certification. No unresolved gameplay defect is recorded for the accepted setup; separate gameplay acceptance of every alternative is not claimed.
+The exact declared engine baseline and conditional dependencies are in [compatibility](COMPATIBILITY.md). Other engine builds/variants are unverified; only the specific October 10 owner environment is covered by the 2.1 retest. No unresolved gameplay defect is recorded for the accepted setup; separate gameplay acceptance of every alternative is not claimed.
 
-See [troubleshooting](../../docs/TROUBLESHOOTING.md) for unavailable output, linking, tuning and file conflicts, or [report a reproducible bug](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/issues/new/choose).
+See [troubleshooting](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/blob/main/docs/TROUBLESHOOTING.md) for unavailable output, linking, tuning and file conflicts, or [report a reproducible bug](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/issues/new/choose).
