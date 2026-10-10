@@ -2,10 +2,10 @@
 
 [Home](../README.md) · [Troubleshooting](TROUBLESHOOTING.md)
 
-Light public archive uploads are held for bundled redistribution review. These instructions describe the prepared installer flow; [check mod download status](MOD-INDEX.md) before installing.
+Light 2.1.0 is available through the two verified [GitHub Releases](MOD-INDEX.md). Use the corresponding mod archive and follow its dependency requirements.
 
 1. Open the individual mod's requirements and compatibility page. Verify the exact supported engine/dependency versions.
-2. Obtain the specifically versioned archive from its future GitHub Release. Check SHA-256 if provided. Do not use an internal test build as a stable release.
+2. Obtain the specifically versioned archive from its versioned GitHub Release. Check SHA-256 if provided. Do not use an internal test build as a stable release.
 3. Save and close GAMMA. Preserve your current MO2 profile/settings and previous mod version for recovery.
 4. Use MO2's **Install a new mod from an archive**. Keep the archive's FOMOD structure; do not manually flatten its alternative folders.
 5. Select only integrations whose dependencies you installed separately. Install the mod as a separate entry, disable its older version, and enable the new entry.

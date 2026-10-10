@@ -34,12 +34,13 @@ Engine-dependent releases must identify the exact supported lineage and matching
 
 See [release workflow](docs/RELEASE-WORKFLOW.md) and [Light component review](docs/LIGHT-REDISTRIBUTION-REVIEW.md).
 
-## 2026-10-04 initial Light publication
+## Historical 2026-10-04 initial Light publication
 
-The owner explicitly authorized initial One Key Light 2.0 and Unified Player Light Controls 2.0 publication in this task. Redistribution review currently holds both uploads. No other mod, engine binary or PDB is authorized. Future public changes, including 2.0.1/2.1, still require new current-task authorization.
+The owner explicitly authorized initial One Key Light 2.0 and Unified Player Light Controls 2.0 publication in this task. At that time, redistribution review held both uploads; the October 10 clearance supersedes that hold. No other mod, engine binary or PDB is authorized. Future public changes, including 2.0.1/2.1, still require new current-task authorization.
 
-## October 10 coordinated Light 2.1.0 preparation
+## October 10 coordinated Light 2.1.0 publication
 
-The owner authorizes this task’s Light 2.1.0 public documentation and releases
-subject to gates. Both archives remain held for exact inherited rights. No release
-tags/assets are created until clearance; no other project publication is authorized.
+The owner authorized the two coordinated Light 2.1.0 Releases. Exact source,
+redistribution, notices, corresponding source and archive integrity gates passed.
+Both Releases and their independently downloaded .7z assets are verified live.
+No other project was published. [Downloads](docs/MOD-INDEX.md).

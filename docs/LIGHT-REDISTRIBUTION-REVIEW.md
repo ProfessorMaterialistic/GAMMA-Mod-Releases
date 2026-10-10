@@ -14,5 +14,5 @@ See the [versioned source](../source/light-2.1.0/README.md),
 [license notices](../source/light-2.1.0/LICENSE-NOTICES.md),
 [modifications](../source/light-2.1.0/MODIFICATIONS.md) and
 [credits](../source/light-2.1.0/CREDITS.md).
-Download status remains on the individual project pages until the verified
-GitHub Releases are published. Internal permission/provenance records stay private.
+[One Key Light 2.1.0](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/releases/tag/one-key-light-v2.1.0) and
+[Unified Player Light Controls 2.1.0](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/releases/tag/unified-player-light-controls-v2.1.0) are published with verified archives.

@@ -4,10 +4,10 @@
 
 | Symptom | Check / action |
 | --- | --- |
-| No download button | Light archive uploads are held for bundled-file review. Check the mod index; no public package is available yet. |
+| Finding the archive | Open the mod's [GitHub Release](MOD-INDEX.md), expand Assets and select its named v2.1.0 .7z. The source zip/tar.gz is for development, not the MO2 installer. |
 | Light MCM page absent / old labels | Enable the intended 2.1.0 entry; disable the older provider; verify its files win MO2 conflicts; check MCM and exact engine identity. |
 | UTLF action absent / no weapon light | Install UTLF 1.0.1 and supported weapon registration/attachment; select matching optional IR bridge if using IR; check Compatibility detection and battery/equipment. |
-| Laser unavailable | Install Laser Settings 2.7 separately, select its FOMOD integration and use a laser-capable weapon. |
+| Laser unavailable | Install Laser Settings 2.7 separately, select its FOMOD integration with compatible BaS/laser support and use a laser-capable weapon. |
 | IR unavailable | Check the corresponding Soy dependency, FOMOD choice, deployed NVGs and, for IR headlamps, the NVG illuminator module. |
 | Linked lights stay dark under NVGs | Expected when selected IR cannot emit. Restore appropriate equipment/power; do not assume white fallback. Verify both shared linking selectors and Apply. |
 | Headlamp never offers AUTO | Expected: Normal, IR and linked headlamps are OFF/ON only. |

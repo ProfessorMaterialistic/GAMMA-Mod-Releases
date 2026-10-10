@@ -5,7 +5,7 @@
 - **MichaelHochriegl / Universal Tactical Light Framework** - weapon-light framework and upstream scripts; [official project](https://github.com/MichaelHochriegl/Stalker.Anomaly.Universal.Tactical.Light.Framework).
 - **Soy** - Adjustable Headlamps, UTLF IR Mode and IR Headlamps integrations.
 - **Borksy** - Laser Settings integration.
-- **RavenAscendant / MCM**, **MGI/MGUI contributors**, and the **GAMMA 3D PDA and Headlamp Animations authors** - configuration, optional GUI launchers and presentation. Exact notices/component attribution remain pending bundled-file clearance; both archive uploads are held.
+- **RavenAscendant / MCM**, **MGI/MGUI contributors**, and the **GAMMA 3D PDA and Headlamp Animations authors** - configuration, optional GUI launchers and presentation. The Light packages preserve the component credits and required scoped notices; complete dependencies are installed separately.
 
 See [One Key credits](mods/One-Key-Light/CREDITS.md), [Unified credits](mods/Unified-Player-Light-Controls/CREDITS.md) and the [component redistribution review](docs/LIGHT-REDISTRIBUTION-REVIEW.md). Preserve upstream credit chains and asset-specific notices; complete dependency packages are installed separately.
 

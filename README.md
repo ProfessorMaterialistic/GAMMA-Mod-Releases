@@ -6,7 +6,7 @@
 
 Player light controls and community projects for **S.T.A.L.K.E.R. Anomaly / GAMMA**.
 
-The Light 2.1.0 firing correction passed all **10 owner gameplay tests**. Public downloads are held while bundled-file redistribution review is completed.
+The Light 2.1.0 firing correction passed all **10 owner gameplay tests**. Both coordinated 2.1.0 Releases are published; their downloadable archives are verified.
 
 ## One Key Light 2.1.0
 
@@ -16,9 +16,9 @@ Control your installed lights with one key: **Tap, Double Tap, Hold**, or the **
 - Normal/IR headlamp support, weapon lights and optional laser integration.
 - Explicit vanilla Torch binding clear/restore.
 
-**Public status: release held.**
+**Released:** [Version 2.1.0](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/releases/tag/one-key-light-v2.1.0).
 
-[Download status](mods/One-Key-Light/README.md#download) · [Install](mods/One-Key-Light/INSTALL.md) · [Requirements](mods/One-Key-Light/COMPATIBILITY.md) · [Features](mods/One-Key-Light/FEATURES.md) · [Changelog](mods/One-Key-Light/CHANGELOG.md)
+[Download](mods/One-Key-Light/README.md#download) · [Install](mods/One-Key-Light/INSTALL.md) · [Requirements](mods/One-Key-Light/COMPATIBILITY.md) · [Features](mods/One-Key-Light/FEATURES.md) · [Changelog](mods/One-Key-Light/CHANGELOG.md)
 
 ## Unified Player Light Controls 2.1.0
 
@@ -28,9 +28,9 @@ Keep light modes and tuning consistent across native controls and supported devi
 - Separate or NVG Linked weapon/headlamp routes.
 - Works alone or with One Key's gestures and menu.
 
-**Public status: release held.**
+**Released:** [Version 2.1.0](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/releases/tag/unified-player-light-controls-v2.1.0).
 
-[Download status](mods/Unified-Player-Light-Controls/README.md#download) · [Install](mods/Unified-Player-Light-Controls/INSTALL.md) · [Requirements](mods/Unified-Player-Light-Controls/COMPATIBILITY.md) · [Features](mods/Unified-Player-Light-Controls/FEATURES.md) · [Changelog](mods/Unified-Player-Light-Controls/CHANGELOG.md)
+[Download](mods/Unified-Player-Light-Controls/README.md#download) · [Install](mods/Unified-Player-Light-Controls/INSTALL.md) · [Requirements](mods/Unified-Player-Light-Controls/COMPATIBILITY.md) · [Features](mods/Unified-Player-Light-Controls/FEATURES.md) · [Changelog](mods/Unified-Player-Light-Controls/CHANGELOG.md)
 
 ## In development
 

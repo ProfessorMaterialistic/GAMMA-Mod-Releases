@@ -12,8 +12,8 @@ Existing gestures, radial modes/themes, native MCM navigation, linking, IR fail-
 headlamp animations/sounds, power/battery behavior and AUTO policies are preserved.
 Headlamps remain OFF/ON; weapon/laser AUTO remains conditional on capabilities.
 
-**Publication held:** exact redistribution rights are unresolved. Local archive
-preparation and gameplay acceptance do not establish a public release.
+Final distribution adds scoped license notices and portable corresponding source.
+Runtime and asset bytes are unchanged from the accepted 2.1.0 review packages.
 
 ## Historical 2.0 record
 
