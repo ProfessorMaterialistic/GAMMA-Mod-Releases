@@ -1,7 +1,6 @@
-# Installation and rollback — 2.1.0
+# Installation and rollback â€” 2.1.0
 
-**Public download held pending redistribution clearance.** These instructions
-describe the prepared MO2 package; no released archive is currently available.
+Install the versioned .7z from the [GitHub Release](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/releases/tag/unified-player-light-controls-v2.1.0) through MO2.
 
 ## Requirements and installation
 

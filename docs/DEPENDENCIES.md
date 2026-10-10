@@ -13,17 +13,17 @@ These are separately installed dependencies. The Light packages include modified
 | GAMMA 3D PDA and Headlamp Animations | Required animation component, before Light overrides | [GAMMA source component](https://github.com/Grokitach/Stalker_GAMMA/tree/main/G.A.M.M.A/modpack_addons/G.A.M.M.A.%203D%20PDA%20and%20Headlamp%20Animations) |
 | UTLF / MichaelHochriegl | 1.0.1, conditional for weapon lights; requires supported weapon registration / attachment | [Official project](https://github.com/MichaelHochriegl/Stalker.Anomaly.Universal.Tactical.Light.Framework) / [releases](https://github.com/MichaelHochriegl/Stalker.Anomaly.Universal.Tactical.Light.Framework/releases) |
 | Soy Adjustable Headlamps | 1.0, conditional for Adjustable backend | [Official MIT-labelled author upload](https://www.moddb.com/mods/stalker-anomaly/addons/adjustable-flashlight-v); exact archive checksum matched |
-| Soy UTLF IR Mode | 1.03 with UTLF 1.0.1, conditional for weapon IR | [Official Proprietary-labelled author upload](https://www.moddb.com/mods/stalker-anomaly/addons/soys-ir-mode-for-universal-tactical-light-framework); exact archive checksum matched, modified-copy redistribution held |
+| Soy UTLF IR Mode | 1.03 with UTLF 1.0.1, conditional for weapon IR | [Official Proprietary-labelled author upload](https://www.moddb.com/mods/stalker-anomaly/addons/soys-ir-mode-for-universal-tactical-light-framework); exact archive checksum matched; the modified integration has separate GPL-compatible redistribution permission and scoped notices |
 | Soy IR Headlamps | 1.3.0 with NVG illuminator, conditional for IR headlamp | [Official MIT-labelled author upload](https://www.moddb.com/mods/stalker-anomaly/addons/ir-headlamp); exact locally tested same-version archive differs from current upload. [Recorded author thread](https://discord.com/channels/912320241713958912/1532841384732659873) remains a discovery link |
 | Borksy Laser Settings | 2.7, conditional for laser integration; requires MCM and compatible BaS/laser support | [Official author release](https://www.moddb.com/mods/laser-settings/downloads/laser-settings-v2-7) |
 | MGI/MGUI Conditional Integration Fix | 0.3.4, optional GUI launchers | Exact author distribution URL not verified. [GAMMA community entry](https://discord.gg/stalker-gamma) is a discovery/help link |
 | Native / G2X | Installer alternative, using separately installed presets | No extra Soy dependency. Exact preset package URL not verified; retain the supported GAMMA setup rather than substituting an arbitrary package |
-| Companion Light mod | Optional, matching 2.1.0 and identical FOMOD choices | [One Key](../mods/One-Key-Light/README.md) / [Unified](../mods/Unified-Player-Light-Controls/README.md); downloads currently held |
+| Companion Light mod | Optional, matching 2.1.0 and identical FOMOD choices | [One Key](../mods/One-Key-Light/README.md) / [Unified](../mods/Unified-Player-Light-Controls/README.md); matching 2.1.0 downloads are live |
 
 ## Verification limits
 
 Updated October 10, 2026: official Soy author pages and exact archive checksums
-were inspected. Author MIT labels do not resolve unidentified inherited UI rights.
+were inspected. Exact distributed derivatives now have scoped licenses/notices and GPL-compatible permission; complete upstream packages retain their original terms.
 The 2.1 retest engine environment is specific; other engines remain unverified.
 
 
