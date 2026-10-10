@@ -1,0 +1,290 @@
+local GUI
+-- Compact outlined padlock: shoulders, shackle, body outline and keyhole.
+local lock_parts={{-3,-7,6,2},{-4,-6,2,6},{2,-6,2,6},{-6,-1,12,2},{-6,0,2,7},{4,0,2,7},{-6,6,12,2},{-1,2,2,3}}
+-- Minimal uses its own thin 8x11 lock; Tactical keeps the original 12x15 outline.
+local minimal_lock_parts={{-2,-5,4,1},{-3,-4,1,4},{2,-4,1,4},{-4,0,8,1},{-4,1,1,5},{3,1,1,5},{-4,5,8,1},{0,2,1,2}}
+local short={headlamp="HEAD",laser="LASER",utlf_visible="UTLF WL",utlf_ir="WPN IR",headlamp_ir="HEAD IR",weapon_situational="WEAPON",headlamp_situational="HEADLAMP"}
+class "OKLCLightMenu" (CUIScriptWnd)
+function OKLCLightMenu:__init() super()
+    self:SetWndRect(Frect():set(0,0,1024,768))
+    self:SetAutoDelete(true)
+    local xml=CScriptXmlInit()
+    xml:ParseFile("ui_one_key_lights.xml")
+    self.rows,self.labels,self.dots,self.indicators,self.batteries={},{},{},{},{}
+    self.locks={}
+    self.icons,self.badges,self.routes={},{},{}
+    -- Native UI draws children in attachment order: backgrounds first.
+    for i=1,5 do self.rows[i]=xml:InitStatic("sector",self) end
+    for i=1,5 do
+        self.icons[i]=xml:InitStatic("icon",self)
+        self.badges[i]=xml:InitStatic("icon",self)
+        self.routes[i]=xml:InitStatic("label",self)
+        self.labels[i]=xml:InitStatic("label",self)
+        self.dots[i]=xml:InitStatic("dot",self)
+        self.indicators[i]=xml:InitStatic("label",self)
+        self.batteries[i]=xml:InitStatic("label",self)
+        self.locks[i]={}
+        for j=1,#lock_parts do self.locks[i][j]=xml:InitStatic("lock_part",self) end
+    end
+    self.cancel=xml:InitStatic("cancel",self)
+    self.heading=xml:InitStatic("label",self)
+    self.hint=xml:InitStatic("label",self)
+    self.cancel:TextControl():SetText("X")
+    self.status={}
+end
+function OKLCLightMenu:__finalize() GUI=nil end
+function OKLCLightMenu:Prepare(target)
+    local cfg=one_key_lights_input.settings()
+    local size=math.max(120,math.min(240,tonumber(cfg.menu_size) or 160))
+    self.label_mode=tonumber(cfg.radial_labels) or 1
+    self.icon_style=tonumber(cfg.icon_style) or 1
+    self.use_icons=self.label_mode~=3 and one_key_lights_icons.ready()
+    if not self.use_icons then self.label_mode=3 end
+    if self.use_icons then size=math.max(220,size) end
+    self.target=target;self.style=cfg.indicator_style or 1;self.show_battery=cfg.show_battery~=false
+    self.show_locks=cfg.show_locks~=false
+    self.behavior=tonumber(cfg.radial_behavior) or 1
+    self.theme=one_key_lights_theme.get(cfg.radial_theme)
+    self.battery_color=cfg.battery_color~=false
+    self.right_click=tonumber(cfg.right_click) or 2
+    self.mode_picker=self.behavior==2
+    if self.style~=4 or self.show_battery then size=math.max(200,size) end
+    self.alpha=math.max(60,math.min(230,tonumber(cfg.menu_opacity) or 155))
+    self.radius=size/2
+    local d=device()
+    self.xscale=(d.height/d.width)/(768/1024)
+    self.items={}
+    for _,a in ipairs(one_key_lights_actions.list(true)) do
+        local bound=one_key_lights_actions.radial_id(cfg.tap)==a.id or one_key_lights_actions.radial_id(cfg.double)==a.id or one_key_lights_actions.radial_id(cfg.hold)==a.id
+        local visible=cfg["show_"..a.id]~=false
+        if a.id=="weapon_situational" or a.id=="headlamp_situational" then
+            local head=a.id=="headlamp_situational"
+            local white=head and "headlamp" or "utlf_visible"
+            local ir=head and "headlamp_ir" or "utlf_ir"
+            visible=cfg["show_"..white]~=false or cfg["show_"..ir]~=false
+            for _,gesture in ipairs({"tap","double","hold"}) do bound=bound or cfg[gesture]==white or cfg[gesture]==ir end
+        end
+        if visible and not (cfg.hide_bound and bound) then self.items[#self.items+1]=a end
+    end
+    if target then self.items={{id="off",name="OFF",value=0},{id="on",name="ON",value=1},{id="auto",name="AUTO",value=2}} end
+    if target and not one_key_lights_display.state(target).supports_auto then
+        self.items={{id="off",name="OFF",value=0},{id="on",name="ON",value=1}}
+    end
+    local m=GetCursorPosition()
+    self.origin={x=m.x,y=m.y}
+    self.center={x=math.max(124*self.xscale,math.min(1024-124*self.xscale,m.x)),y=math.max(self.radius+26,math.min(708-self.radius,m.y))}
+    self.selected=nil; self.next_refresh=0; self.status={}
+    self.entry_signature=nil;self.badge_semantics={}
+    local n=#self.items
+    for i=1,5 do
+        local visible=i<=n
+        self.icons[i]:Show(visible and self.use_icons)
+        self.badges[i]:Show(visible and self.use_icons)
+        self.routes[i]:Show(visible)
+        self.rows[i]:Show(visible); self.labels[i]:Show(visible); self.dots[i]:Show(visible)
+        self.indicators[i]:Show(visible);self.batteries[i]:Show(visible)
+        for _,part in ipairs(self.locks[i]) do part:Show(false) end
+        if visible then
+            local row=self.rows[i]
+            row:InitTexture("oklc_ring_"..n.."_"..i)
+            row:SetWndPos(vector2():set(self.center.x-self.radius*self.xscale,self.center.y-self.radius))
+            row:SetWndSize(vector2():set(size*self.xscale,size))
+            local angle=-math.pi/2+(i-1)*2*math.pi/n
+            local x=self.center.x+math.cos(angle)*self.radius*0.69*self.xscale
+            local y=self.center.y+math.sin(angle)*self.radius*0.69
+            for j,rect in ipairs(self.icon_style==2 and minimal_lock_parts or lock_parts) do
+                self.locks[i][j]:SetWndPos(vector2():set(x+rect[1]*self.xscale,y+rect[2]))
+                self.locks[i][j]:SetWndSize(vector2():set(rect[3]*self.xscale,rect[4]))
+            end
+            self.icons[i]:SetWndPos(vector2():set(x-15*self.xscale,y-36))
+            self.icons[i]:SetWndSize(vector2():set(30*self.xscale,30))
+            local semantic=self.target and self.items[i].id or one_key_lights_icons.action(self.items[i].id)
+            local icon=one_key_lights_icons.get_icon(semantic,self.icon_style)
+            if self.use_icons and icon then
+                local ok=pcall(function() self.icons[i]:InitTexture(icon.texture) end)
+                if not ok then self.use_icons=false;self.label_mode=3 end
+            end
+            self.badges[i]:SetWndPos(vector2():set(x+17*self.xscale,y-29))
+            self.badges[i]:SetWndSize(vector2():set(14*self.xscale,14))
+            self.routes[i]:SetWndPos(vector2():set(x-40*self.xscale,y+25))
+            self.routes[i]:SetWndSize(vector2():set(80*self.xscale,16))
+            self.labels[i]:Show(self.label_mode~=2)
+            self.labels[i]:SetWndPos(vector2():set(x-40*self.xscale,y+(self.use_icons and -7 or -22)))
+            self.labels[i]:SetWndSize(vector2():set(80*self.xscale,16))
+            self.labels[i]:TextControl():SetText(short[self.items[i].id] or self.items[i].name)
+            self.dots[i]:SetWndPos(vector2():set(x+34*self.xscale,y+13))
+            self.dots[i]:SetWndSize(vector2():set(6*self.xscale,6))
+            self.indicators[i]:SetWndPos(vector2():set(x-40*self.xscale,y+9))
+            self.indicators[i]:SetWndSize(vector2():set(76*self.xscale,16))
+            self.batteries[i]:SetWndPos(vector2():set(x-40*self.xscale,y+41))
+            self.batteries[i]:SetWndSize(vector2():set(80*self.xscale,16))
+        end
+    end
+    self.cancel:SetWndPos(vector2():set(self.center.x-12*self.xscale,self.center.y-10))
+    self.cancel:SetWndSize(vector2():set(24*self.xscale,20))
+    self.heading:SetWndPos(vector2():set(self.center.x-120*self.xscale,self.center.y-self.radius-23))
+    self.heading:SetWndSize(vector2():set(240*self.xscale,18))
+    self.heading:TextControl():SetText(target and ((short[target] or target).." / SELECT MODE") or "LIGHT CONTROLS")
+    self.hint:SetWndPos(vector2():set(self.center.x-120*self.xscale,self.center.y+self.radius+36))
+    self.hint:SetWndSize(vector2():set(240*self.xscale,18))
+    self.hint:TextControl():SetText(target and "Click a mode / Escape to cancel" or (self.behavior==1 and "Click to cycle / Escape to close" or "AUTO follows saved rules"))
+    self.hint:TextControl():SetTextColor(one_key_lights_theme.argb(self.theme.muted))
+    self.heading:TextControl():SetTextColor(one_key_lights_theme.argb(self.theme.text))
+    self.cancel:TextControl():SetTextColor(one_key_lights_theme.argb(self.theme.text))
+end
+function OKLCLightMenu:Update()
+    CUIScriptWnd.Update(self)
+    if not db.actor or not db.actor:alive() or device():is_paused() then self:Close(); return end
+    local now=time_global()
+    local refresh=now>=self.next_refresh
+    if refresh then
+        self.next_refresh=now+200
+        if not self.target then
+            local keys={}
+            for _,entry in ipairs(one_key_lights_actions.list(true)) do keys[#keys+1]=entry.id end
+            local signature=table.concat(keys,":")
+            if self.entry_signature and self.entry_signature~=signature then self:Prepare();self.entry_signature=signature;return end
+            self.entry_signature=signature
+        end
+        for i,a in ipairs(self.items) do
+            if self.target then
+                local state=one_key_lights_display.state(self.target)
+                self.status[i]={available=state.installed,locked=state.locked,value=state.value==a.value and 1 or 0,emitting=false,linked=state.linked,route=state.route}
+            else self.status[i]=one_key_lights_display.state(a.id) end
+        end
+    end
+    local m=GetCursorPosition()
+    local dx,dy=(m.x-self.center.x)/self.xscale,m.y-self.center.y
+    local radius=math.sqrt(dx*dx+dy*dy)
+    local moved=math.abs(m.x-self.origin.x)+math.abs(m.y-self.origin.y)>3
+    self.selected=nil
+    if #self.items>0 and moved and radius>=self.radius*0.34 and radius<=self.radius then
+        local angle=(math.atan2(dy,dx)+math.pi/2+2*math.pi)%(2*math.pi)
+        self.selected=math.floor((angle+math.pi/#self.items)/(2*math.pi/#self.items))%#self.items+1
+    end
+    if not refresh and self.last_selected==self.selected then return end
+    self.last_selected=self.selected
+    for i,a in ipairs(self.items) do
+        local state=self.status[i] or {available=false,value=0}
+        local palette=self.theme
+        local bg=self.selected==i and state.available and palette.hover or palette.bg
+        local opacity=state.available and self.alpha or math.floor(self.alpha*0.45)
+        self.rows[i]:SetTextureColor(one_key_lights_theme.argb(bg,opacity))
+        self.labels[i]:TextControl():SetTextColor(one_key_lights_theme.argb(state.available and palette.text or palette.muted))
+        local color=one_key_lights_theme.argb(state.value==2 and palette.auto or state.value==1 and palette.on or palette.off)
+        local locked=self.show_locks~=false and state.locked==true
+        self.dots[i]:Show(not locked and not self.target)
+        self.indicators[i]:Show(not locked)
+        for _,part in ipairs(self.locks[i]) do
+            part:Show(locked)
+            part:SetTextureColor(one_key_lights_theme.argb(palette.text))
+        end
+        self.dots[i]:SetTextureColor(one_key_lights_theme.argb(state.emitting and palette.on or palette.off))
+        self.icons[i]:Show(self.use_icons)
+        self.labels[i]:Show(self.label_mode~=2 or not self.use_icons)
+        self.icons[i]:SetTextureColor(color)
+        self.badges[i]:Show(self.use_icons and not self.target)
+        if self.use_icons and not self.target then
+            local semantic=state.locked and "missing" or state.value==2 and "auto" or state.value==1 and "on" or "off"
+            if self.badge_semantics[i]~=semantic then
+                local ok=pcall(function() self.badges[i]:InitTexture(one_key_lights_icons.get_icon(semantic,self.icon_style).texture) end)
+                if not ok then self.use_icons=false;self.label_mode=3 end
+                self.badge_semantics[i]=semantic
+            end
+            self.badges[i]:SetTextureColor(color)
+        end
+        self.routes[i]:TextControl():SetText(not self.target and ((state.linked and "LINK "..one_key_lights_icons.route_label(state.route).." " or "")..(state.emitting and "LIT" or "DARK")) or "")
+        self.routes[i]:TextControl():SetTextColor(one_key_lights_theme.argb(palette.muted))
+        self.indicators[i]:TextControl():SetText(self.target and (state.value==1 and "SELECTED" or "") or one_key_lights_display.indicator(state.value,self.style))
+        self.indicators[i]:TextControl():SetTextColor(color)
+        self.batteries[i]:TextControl():SetText(self.show_battery and state.percent and (state.percent.."%") or "")
+        self.batteries[i]:TextControl():SetTextColor(one_key_lights_theme.argb(one_key_lights_theme.battery(state.percent,self.battery_color,palette)))
+    end
+end
+function OKLCLightMenu:Select(close_after,direction)
+    if not self:IsShown() then return end
+    self:Update()
+    if not self:IsShown() then return end
+    local a=self.selected and self.items[self.selected]
+    if a then
+        local available=one_key_lights_actions.state(self.target or a.id)
+        if not available then
+            if close_after then self:Close() end
+            return
+        end
+    end
+    if a and not self.target and direction==4 then
+        if one_key_lights_display.bridge(a.id) then one_key_lights_display.toggle_current(a.id)
+        else one_key_lights_actions.run(a.id) end
+        self.next_refresh=0;self:Update();return
+    end
+    if a and not self.target and direction==-1 then
+        if one_key_lights_display.bridge(a.id) then one_key_lights_display.cycle(a.id,-1)
+        else one_key_lights_actions.run(a.id) end
+        self.next_refresh=0;self:Update();return
+    end
+    if a and not self.target and self.mode_picker and one_key_lights_display.bridge(a.id) then
+        if self.release_select~=false then self.release_key=nil end
+        self:Prepare(a.id);return
+    end
+    if a and not self.target and self.behavior==1 then
+        if one_key_lights_display.bridge(a.id) then one_key_lights_display.cycle(a.id)
+        else one_key_lights_actions.run(a.id) end
+        self.next_refresh=0
+        if close_after then self:Close() else self:Update() end
+        return
+    end
+    local target=self.target
+    self:Close()
+    if a then
+        if target then one_key_lights_display.select(target,a.value) else one_key_lights_actions.run(a.id) end
+    end
+end
+function OKLCLightMenu:OnKeyboard(dik,event)
+    if event==ui_events.WINDOW_KEY_RELEASED and release(dik) then return true end
+    if event==ui_events.WINDOW_KEY_PRESSED then
+        if press(dik) then return true end
+        if dik==DIK_keys.DIK_ESCAPE then self:Close(); return true end
+        if dik==DIK_keys.MOUSE_2 then
+            if self.right_click==1 then self:Close()
+            elseif self.right_click==2 then self:Select(false,-1)
+            elseif self.right_click==4 then self:Select(false,4)
+            else self:Select() end
+            return true
+        end
+        if dik==DIK_keys.MOUSE_1 then self:Select(); return true end
+    end
+    return CUIScriptWnd.OnKeyboard(self,dik,event)
+end
+function OKLCLightMenu:Close()
+    self.release_key=nil;self.opening_key=nil;self.release_select=nil
+    if self:IsShown() then self:HideDialog() end
+    Unregister_UI("OKLCLightMenu")
+    one_key_lights_input.reset()
+end
+function is_open() return GUI~=nil and GUI:IsShown() end
+function press(key)
+    if not is_open() or GUI.opening_key~=key then return false end
+    GUI:Close();return true
+end
+function release(key)
+    if not is_open() or GUI.release_key~=key then return false end
+    if GUI.release_select==false then GUI:Close() else GUI:Select(true) end
+    return true
+end
+function open(key,held,selection,dedicated)
+    if not db.actor or device():is_paused() then return end
+    if is_open() then GUI:Close(); return end
+    if not actor_menu.is_hud_free() then return end
+    if not GUI then GUI=OKLCLightMenu() end
+    GUI:AllowMovement(one_key_lights_input.settings().allow_movement~=false)
+    GUI:ShowDialog(true)
+    GUI:Prepare()
+    local release_mode=held or (dedicated and (selection==2 or selection==3))
+    GUI.opening_key=key
+    GUI.release_select=selection~=2
+    GUI.release_key=release_mode and key or nil
+    Register_UI("OKLCLightMenu","one_key_lights")
+end
+
+function close() if is_open() then GUI:Close() end end

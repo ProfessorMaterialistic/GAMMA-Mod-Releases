@@ -1,0 +1,39 @@
+-- Cached backing store. Nested edits form one commit; no writes from getters.
+local cache,known,depth,dirty={},{},0,false
+generation=0
+function get(key,default,kind)
+    if not known[key] then
+        cache[key]=axr_main.config:r_value("mcm",key,kind or 2);known[key]=true
+    end
+    if cache[key]==nil then return default end
+    return cache[key]
+end
+function put(key,value)
+    if get(key)==value then return false end
+    cache[key]=value;known[key]=true
+    axr_main.config:w_value("mcm",key,value);dirty=true;generation=generation+1
+    return true
+end
+function remove(key)
+    local config=axr_main.config
+    if not config:line_exist("mcm",key) then return false end
+    config:remove_line("mcm",key)
+    if config.cache then config.cache["mcm&"..key]=nil end
+    cache[key]=nil;known[key]=true;dirty=true;generation=generation+1
+    return true
+end
+function begin() depth=depth+1 end
+function commit()
+    depth=math.max(0,depth-1)
+    if depth==0 and dirty then
+        light_compat.link_stage("store:save-before")
+        axr_main.config:save();dirty=false
+        light_compat.link_stage("store:save-after")
+    end
+end
+function edit(fn)
+    begin();local ok,result=pcall(fn);commit()
+    if not ok then error(result) end
+    return result
+end
+function invalidate() cache={};known={};generation=generation+1 end

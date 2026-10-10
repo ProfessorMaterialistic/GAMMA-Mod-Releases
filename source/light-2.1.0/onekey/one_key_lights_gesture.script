@@ -1,0 +1,32 @@
+-- Explicit gesture FSM. Pure transitions produce ordered effects.
+function new() return {phase="idle",pressed_at=0,tap_deadline=0} end
+function reset(s) s.phase="idle";s.pressed_at=0;s.tap_deadline=0 end
+local function tick(s,now,cfg,out)
+    if (s.phase=="pressed" or s.phase=="second_pressed") and now-s.pressed_at>=cfg.hold_ms then
+        s.phase="hold_fired";out[#out+1]={action=cfg.hold,held=true}
+    elseif s.phase=="tap_pending" and now>s.tap_deadline then
+        reset(s);out[#out+1]={action=cfg.tap,held=false}
+    end
+end
+function step(s,event,now,cfg)
+    local out={}
+    if event=="cancel" or event=="reset" then reset(s);return out end
+    if event=="menu" or event=="modifier" then
+        reset(s);s.phase="menu";out[1]={action="quick_menu",held=event=="modifier"};return out
+    end
+    if event=="tick" then tick(s,now,cfg,out);return out end
+    if event=="press" then
+        if s.phase~="idle" and s.phase~="tap_pending" then return out end
+        local second=s.phase=="tap_pending" and now<=s.tap_deadline
+        if s.phase=="tap_pending" and not second then out[#out+1]={action=cfg.tap,held=false} end
+        s.phase=second and "second_pressed" or "pressed";s.pressed_at=now;s.tap_deadline=0
+    elseif event=="release" then
+        local phase=s.phase
+        if phase=="hold_fired" or phase=="menu" then reset(s);return out end
+        if phase~="pressed" and phase~="second_pressed" then return out end
+        if now-s.pressed_at>=cfg.hold_ms then reset(s);out[1]={action=cfg.hold,held=false}
+        elseif phase=="second_pressed" then reset(s);out[1]={action=cfg.double,held=false}
+        else s.phase="tap_pending";s.tap_deadline=now+cfg.double_ms end
+    end
+    return out
+end

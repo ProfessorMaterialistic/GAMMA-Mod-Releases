@@ -1,0 +1,25 @@
+-- Semantic mapping for one cached atlas. UI coordinates are centralized here.
+local names={"weapon_light","weapon_ir","headlamp","headlamp_ir","laser","nvg","linked","auto","on","off","battery","locked","missing"}
+local actions={utlf_visible="weapon_light",utlf_ir="weapon_ir",weapon_situational="weapon_light",headlamp_situational="headlamp",headlamp="headlamp",headlamp_ir="headlamp_ir",laser="laser"}
+local mapping={}
+for i,name in ipairs(names) do mapping[name]={texture="oklc_icon_"..name,x=((i-1)%8)*64,y=math.floor((i-1)/8)*64,width=64,height=64} end
+local checked,available=false,false
+function get_icon(name,style)
+    local entry=mapping[name]
+    if not entry then return end
+    if style==2 then return {texture=entry.texture.."_minimal",x=entry.x,y=entry.y+128,width=64,height=64} end
+    return entry
+end
+function action(id) return actions[id] or id end
+function ready()
+    if not checked then
+        checked=true
+        if getFS then
+            local fs=getFS()
+            local ok,result=pcall(function() return fs:exist(fs:update_path("$game_textures$","ui\\ui_one_key_light_icons.dds")) end)
+            available=ok and result~=nil and result~=false
+        else available=true end
+    end
+    return available
+end
+function route_label(route) return (route=="utlf_ir" or route=="headlamp_ir") and "IR" or "WL" end

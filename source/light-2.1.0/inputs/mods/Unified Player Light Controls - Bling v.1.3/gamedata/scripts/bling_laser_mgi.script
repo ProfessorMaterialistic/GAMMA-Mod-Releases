@@ -1,0 +1,32 @@
+-- Launcher integration only. The laser mod owns its UI, settings and keybinds.
+local function available()
+    return type(laser_settings_ui)=="table"
+        and type(laser_settings_ui.open_dialog)=="function"
+        and type(zzz_bas_laser_control)=="table"
+        and type(zzz_bas_laser_control.has_laser)=="function"
+end
+
+local function open_settings()
+    if not available() then return end
+    local actor=db and db.actor
+    local weapon=actor and actor:active_item()
+    local section=weapon and weapon:section()
+    if not section or not zzz_bas_laser_control.has_laser(section) then
+        if actor and news_manager and news_manager.send_tip then
+            news_manager.send_tip(actor,"Equip a weapon with a supported laser to open Laser Settings.",nil,nil,5000)
+        end
+        return
+    end
+    laser_settings_ui.open_dialog()
+end
+
+function on_game_start()
+    if not MGI or type(MGI.register_gui)~="function" or not available() then return end
+    MGI.register_gui({
+        id="bling_laser_settings", name="Laser Settings", author="Bling",
+        version="1.3", category="Lighting", order=400,
+        description="Open the existing Laser Settings page for your equipped weapon.",
+        capabilities={"lighting","configuration"},
+        ui=laser_settings_ui, is_available=available, open=open_settings
+    })
+end

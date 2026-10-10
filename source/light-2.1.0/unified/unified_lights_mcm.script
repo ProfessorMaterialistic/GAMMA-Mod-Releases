@@ -1,0 +1,47 @@
+local registered={}
+local function debug_value() return axr_main.config:r_value("mcm","unified_lights/debug",1)==true end
+function on_mcm_load()
+    light_compat.install_mcm_layout()
+    local compatibility=light_compat.mcm_integrations()
+    compatibility[#compatibility+1]={id="debug",type="check",caption="Debug Mode",val=1,def=false,
+        curr={debug_value},functor={function(value) ui_mcm.set("unified_lights/debug",value) end}}
+    compatibility[#compatibility+1]={id="debug_info",type="desc",text="Unified owns saved light modes and NVG routing.",precondition={debug_value}}
+    return {id="unified_lights",text="ui_mcm_menu_unified_lights",gr={
+        {id="links",text="ui_mcm_unified_lights_section_links",sh=true,gr={
+            {id="title",type="title",text="LIGHT LINKING"},
+            light_compat.mcm_link_option("weapon"),light_compat.mcm_link_option("head"),
+            {id="help",type="desc",text="NVG Linked uses visible lighting with NVGs stowed and IR lighting with NVGs deployed."}
+        }},
+        {id="diagnostics",text="ui_mcm_unified_lights_section_diagnostics",sh=true,gr=compatibility}
+    }}
+end
+function register_integrations()
+    local mgi=light_compat.module("MGI") or light_compat.module("mgi")
+    if not mgi or not mgi.register_gui then return end
+    local nvg=light_compat.module("bling_nvg_mgi");if nvg then nvg.register() end
+    local laser=light_compat.module("bling_laser_mgi");if laser then laser.register() end
+    for _,def in ipairs({
+        {id="bling_player_lights",name="UTLF White Light",ui="bling_player_lights_ui"},
+        -- Share MGI's built-in IDs: each GUI has one launcher in either startup order.
+        {id="adjustable_flashlight",name="Player Headlamp",ui="adjustable_flashlight_ui"},
+        {id="utlf_ir",name="UTLF IR",ui="utlf_ir_mode_ui"},
+        {id="ir_headlamp",name="IR Headlamp",ui="ir_headlamp_ui"}
+    }) do
+        if not registered[def.id] then
+            if mgi.is_registered and mgi.is_registered(def.id) then
+                registered[def.id]=true
+            else
+                local ui=light_compat.module(def.ui)
+                if ui and ui.open_dialog then
+                    def.ui=ui;def.author="Bling";def.version="2.1.0";def.category="Lighting"
+                    registered[def.id]=mgi.register_gui(def)==true
+                end
+            end
+        end
+    end
+end
+function on_game_start()
+    RegisterScriptCallback("on_option_change",function()
+        light_compat.debug_enabled=debug_value()
+    end)
+end
