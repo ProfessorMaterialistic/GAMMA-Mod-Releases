@@ -26,11 +26,14 @@ base Anomaly and other modpacks are unverified. No universal minimum API is asse
 | Soy Adjustable Headlamps 1.0 | OPTIONAL INTEGRATION for adjustable normal headlamp |
 | Soy UTLF IR Mode 1.03 | OPTIONAL INTEGRATION for IR weapon lights; needs UTLF and suitable NVGs |
 | Soy IR Headlamps 1.3.0 plus installed NVG illuminator | OPTIONAL INTEGRATION for IR headlamp |
-| Borksy Laser Settings 2.7 and laser-capable weapon | OPTIONAL INTEGRATION for laser controls |
+| Borksy Laser Settings 2.7, BaS-compatible laser support and laser-capable weapon | OPTIONAL INTEGRATION for laser controls |
 | MGI/MGUI 0.3.4 | OPTIONAL INTEGRATION for GUI launchers; core works without it |
 | Native/G2X presets | OPTIONAL INTEGRATION; assets installed separately |
 | Matching companion 2.1.0 | OPTIONAL INTEGRATION; no third mandatory core |
 | Python, Lupa Lua 5.1, Pillow, 7-Zip | DEVELOPMENT ONLY; never runtime requirements |
+
+Laser Settings lists BaS as a prerequisite; use GAMMA’s installed compatible
+BaS/laser support. No independently numbered BaS pin is established.
 
 The inspected setup also enables UTLF Built-In Weapon Support v2 and GAMMA Weapons
 1.0.0-beta.2; the reproduced weapon is Viper 2. This does not certify all weapons.
