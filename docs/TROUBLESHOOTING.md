@@ -5,7 +5,7 @@
 | Symptom | Check / action |
 | --- | --- |
 | No download button | Light archive uploads are held for bundled-file review. Check the mod index; no public package is available yet. |
-| Light MCM page absent / old labels | Enable the intended 2.0 entry; disable the older provider; verify its files win MO2 conflicts; check MCM and exact engine identity. |
+| Light MCM page absent / old labels | Enable the intended 2.1.0 entry; disable the older provider; verify its files win MO2 conflicts; check MCM and exact engine identity. |
 | UTLF action absent / no weapon light | Install UTLF 1.0.1 and supported weapon registration/attachment; select matching optional IR bridge if using IR; check Compatibility detection and battery/equipment. |
 | Laser unavailable | Install Laser Settings 2.7 separately, select its FOMOD integration and use a laser-capable weapon. |
 | IR unavailable | Check the corresponding Soy dependency, FOMOD choice, deployed NVGs and, for IR headlamps, the NVG illuminator module. |

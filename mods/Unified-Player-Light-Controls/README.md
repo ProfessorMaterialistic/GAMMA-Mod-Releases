@@ -1,78 +1,18 @@
-# Unified Player Light Controls 2.0
+# Unified Player Light Controls 2.1.0
 
-## Overview
+Owner-tested Light controls with the semi-auto firing correction. **Public download
+held for redistribution clearance.** No live GitHub Release is claimed.
 
-Keep light modes and tuning consistent, with optional NVG linking and weapon/laser AUTO. Each Light mod works independently. Use matching 2.0 companions and installer choices when combining them.
+[Features and controls](FEATURES.md) · [Install and rollback](INSTALL.md) ·
+[Compatibility/dependencies](COMPATIBILITY.md) · [Changes](CHANGELOG.md) ·
+[Credits](CREDITS.md) · [Licensing](../../docs/LIGHT-REDISTRIBUTION-REVIEW.md)
 
-**TESTED / FINAL-FOR-NOW** for the accepted setup, owner confirmation recorded 2026-10-01. **Public release held for bundled redistribution review.**
-
-[Features / configuration](FEATURES.md) · [Install / update / remove](INSTALL.md) · [Compatibility](COMPATIBILITY.md) · [Changelog](CHANGELOG.md) · [Credits](CREDITS.md)
-
-## Feature highlights
-
-- Saved device intent and independent per-device tuning.
-- Weapon light / IR / laser OFF, ON and AUTO; headlamps OFF/ON.
-- Explicit Separate / NVG Linked routing with fail-dark IR behavior.
-- Native controls and optional tuning launchers; One Key gestures/menu integration.
-
-## Requirements
-
-| Mod / host | Required? | Purpose | Load relationship | Link |
-| --- | --- | --- | --- | --- |
-| Anomaly / GAMMA, MCM | Yes | Host and configuration | Before Light files | [Sources](../../docs/DEPENDENCIES.md) |
-| MT-TEST 2026.09.07 / xrCore 10074 + matching gamedata | Supported baseline | DX11-AVX, AVX CPU | Engine instructions; gamedata before Light | [Engine source](https://github.com/themrdemonized/xray-monolith) |
-| GAMMA 3D PDA and Headlamp Animations | Yes | Headlamp presentation | Light animation override wins | [Sources](../../docs/DEPENDENCIES.md) |
-
-## Optional integrations
-
-UTLF 1.0.1 for weapon lighting; Soy Adjustable 1.0 for its headlamp backend; Soy UTLF IR 1.03 for weapon IR; Soy IR Headlamps 1.3.0 plus illuminator for IR headlamp; Laser Settings 2.7 for lasers; MGI/MGUI 0.3.4 for optional GUI launchers; the matching companion for combined controls.
-
-These are **feature-conditional and separately installed**. [Complete requirements, source links and limitations](COMPATIBILITY.md).
-
-## Quick install
-
-1. Install the supported host and chosen dependencies separately.
-2. Once released, download the versioned archive and install through MO2's archive / FOMOD flow.
-3. Match backend/integration choices in both Light installers, enable the mod and let its files override its dependencies.
-4. Configure MCM and verify output with the intended equipment.
-
-[Full installation guide](INSTALL.md) · [Verified MO2 priority](COMPATIBILITY.md#verified-mo2-file-priority).
-
-## Controls / behavior
-
-| Input | Action |
-| --- | --- |
-| Native light controls | Control supported device modes without a new mandatory key |
-| Light Linking in MCM | Set Weapon Lights / Headlamps to Separate or NVG Linked, then Apply |
-| Supported tuning dialogs / optional MGI | OFF/ON/AUTO and device-specific tuning |
-| Optional One Key | Tap, Double Tap, Hold and Quick Menu |
-
-Normal and IR headlamps support OFF/ON. Supported weapon lights and laser gain AUTO with Unified. One Key standalone uses OFF/ON. IR needs appropriate equipment/power and deployed NVGs.
-
-## Linked / AUTO behavior
-
-Unified links White/IR weapon light or Normal/IR headlamp explicitly in MCM. Visible lighting routes with NVGs stowed; IR routes with NVGs deployed. Unavailable IR fails dark. Independent modes/tuning survive link/unlink. Gestures do not silently enable links. AUTO gates supported weapon/laser output using saved aim policy; headlamp AUTO is absent.
-
-## Configuration
-
-Use the native MCM pages and supported device dialogs. [Detailed controls, timing, menu options and configuration](FEATURES.md). Light Linking and Compatibility / Debug are the two MCM pages; leave debug off for normal play.
-
-## One Key / Unified integration
-
-Each works independently; no third mandatory core. When combining them, use matching 2.0 versions and FOMOD choices. Either companion order is valid when shared files match and both override their selected dependencies.
-
-## Update and uninstall
-
-Close the game, replace the old MO2 entry with the matched version/options and retain settings. Restore any Torch binding cleared by One Key before removing its binding owner. [Detailed update/removal](INSTALL.md).
-
-## Compatibility and known issues
-
-No unresolved gameplay defect is recorded for the accepted setup. Other engine variants and every optional installer configuration are not separately gameplay certified. Native/G2X beam tuning uses separate presets. [Compatibility details](COMPATIBILITY.md) · [Troubleshooting](../../docs/TROUBLESHOOTING.md).
+Both mods work independently with their existing optional companion architecture.
+One Key owns gestures/radial and standalone OFF/ON. Unified owns advanced intent,
+supported weapon/laser AUTO and visible/IR linking. No third mandatory core.
 
 ## Download
 
-**Not publicly released.** Initial 2.0 publication is authorized in the 2026-10-04 task, but bundled component clearance is incomplete. No download archive or release tag has been published. [Release status / future downloads](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/releases) · [Component review](../../docs/LIGHT-REDISTRIBUTION-REVIEW.md).
-
-## Credits
-
-Bling / ProfessorMaterialistic, UTLF, Soy, Borksy, GAMMA animation contributors and configuration/UI contributors. [Full attribution](CREDITS.md).
+**No public 2.1.0 release or download exists.** Both coordinated packages are
+prepared and checked; exact inherited redistribution rights remain unresolved.
+See [component review](../../docs/LIGHT-REDISTRIBUTION-REVIEW.md).

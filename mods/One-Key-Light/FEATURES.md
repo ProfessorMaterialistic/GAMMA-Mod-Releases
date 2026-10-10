@@ -1,4 +1,4 @@
-# One Key Light 2.0 features and configuration
+# One Key Light 2.1.0 features and configuration
 
 [Overview](README.md) · [Installation](INSTALL.md) · [Requirements](COMPATIBILITY.md)
 
@@ -57,4 +57,4 @@ Apply commits MCM choices; Reset/Cancel discard pending changes. The link select
 
 Normal/IR/linked headlamps are OFF/ON only. Native/G2X beam tuning is limited to the separate preset setup. IR needs suitable equipment and deployed NVGs; linked IR failure remains dark rather than switching to visible light. Other engine variants and all optional configurations are not automatically covered by accepted gameplay evidence.
 
-No unresolved gameplay defect is recorded for the accepted setup. See [compatibility](COMPATIBILITY.md) for scope and [troubleshooting](../../docs/TROUBLESHOOTING.md) for missing devices, file conflicts or bindings. [Report reproducible bugs](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/issues/new/choose).
+No unresolved gameplay defect is recorded for the accepted setup. See [compatibility](COMPATIBILITY.md) for scope and [troubleshooting](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/blob/main/docs/TROUBLESHOOTING.md) for missing devices, file conflicts or bindings. [Report reproducible bugs](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/issues/new/choose).

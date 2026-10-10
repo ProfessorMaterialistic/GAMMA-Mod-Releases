@@ -1,30 +1,34 @@
-# Light bundled component review — 2026-10-04
+# Light bundled component review — October 10, 2026
 
-**Both initial 2.0 public archive uploads are held.** Current-task publication authorization exists, and runtime/package checks passed, but exact bundled component clearance is incomplete. No tags or GitHub Releases were created. No blanket repository license is assigned.
+**Both coordinated 2.1.0 releases are held.** The owner reports 10/10 gameplay PASS
+for the preserved semi-auto firing correction. Source/package integrity checks
+pass, but exact redistribution clearance remains incomplete. No tags, GitHub
+Releases or downloadable assets were created. No blanket license is assigned.
 
-## Component classifications
+| Component | Verified evidence / remaining blocker |
+| --- | --- |
+| Authored controls, shared backends, Native adapter, generated semantic atlas | Project-owned work; mixed inherited package rights remain separately scoped |
+| UTLF 1.0.1 input/battery/items | Exact official inputs verified; GPL-3.0 text/credits retained in local review package. Full combined-work corresponding-source/notices compliance remains pending. |
+| Required actor_effects animation bridge | GAMMA AGPL/modified-addon credit terms recorded; exact pinned local input differs from official component and inherited lineage remains unresolved. |
+| Soy Adjustable 1.0 scripts/UI | Exact archive matches author MIT upload; inherited Borksy UI rights and required notices remain unresolved. |
+| Soy UTLF IR 1.03 scripts/UI | Exact archive matches author Proprietary upload; no derivative redistribution permission established. |
+| Soy IR Headlamp 1.3.0 scripts/UI | Author upload lists MIT, but locally tested same-version archive differs. Exact lineage and Borksy-derived UI rights remain unresolved. |
+| Borksy Laser Settings 2.7 scripts/UI | Exact archive matches official release; no redistribution grant found in inspected archive or official page. |
+| Retained One Key/Unified UI, localized inputs, facades, ring/dot artwork | Exact input bytes preserved; original authorship/inherited terms remain to be established. |
+| Host, MCM, MGI, engine binaries, dependency models/sounds/presets | Separately installed; not bundled |
 
-| Bundled component | Classification | Evidence / remaining action |
-| --- | --- | --- |
-| Authored One Key actions/input/gestures/display/standalone; Unified store/logic/controller; shared light compatibility/backends; Native adapter | ORIGINAL / SAFE TO PUBLISH | Preserved project source matches tested content; retained inputs below remain separately scoped |
-| Generated semantic icon atlas and its descriptor | ORIGINAL / SAFE TO PUBLISH | Original geometric drawing code in the project visual generator; no downloaded artwork used for the atlas |
-| `utlf_input.script`, `utlf_battery.script`, `utlf_items.script` | UPSTREAM / REDISTRIBUTION CONFIRMED, subject to license compliance | Clean input hashes exactly match official UTLF **v1.0.1**. [Pinned GPL-3.0](https://github.com/MichaelHochriegl/Stalker.Anomaly.Universal.Tactical.Light.Framework/blob/v1.0.1/LICENSE). Retain attribution, modified-source notices and applicable source/license obligations; current candidates lack finalized notices |
-| `actor_effects.script`, required animation bridge | REVIEW REQUIRED — exact inherited lineage / notices | Official [GAMMA credits](https://github.com/Grokitach/Stalker_GAMMA#credits) allow modified GAMMA addons with source credit; [repository AGPL-3.0](https://github.com/Grokitach/Stalker_GAMMA/blob/main/LICENSE) is published. The pinned local input differs from current official component bytes; identify exact inherited source/credit chain and satisfy applicable terms before clearing this file |
-| Soy Adjustable `adjustable_flashlight.script` / tuning UI and XML | REVIEW REQUIRED | Exact inspected archive has a functional README but no redistribution grant identified. Confirm Soy/upstream permission and retained UI attribution |
-| Soy UTLF IR `utlf_ir_mode.script`, tuning UI and XML | REVIEW REQUIRED | Exact archive README documents behavior, not redistribution permission. Confirm exact modified-source/UI terms |
-| Soy IR `ir_headlamp.script`, `ir_headlamp_ui.script`, XML | REVIEW REQUIRED | Exact archive supplied no permission/license notice. [Recorded author thread](https://discord.com/channels/912320241713958912/1532841384732659873) is not a permission grant |
-| Borksy `zzz_bas_laser_control.script`, `laser_settings_ui.script` and XML | REVIEW REQUIRED | [Official 2.7 author release](https://www.moddb.com/mods/laser-settings/downloads/laser-settings-v2-7) identified. No grant for these exact modified copies established |
-| Retained One Key menu/theme/binding/UI, localized input and ring/dot DDS | REVIEW REQUIRED | Preserved earlier One Key inputs; verify original authorship/inherited artwork and notices rather than assuming all retained material is new/original |
-| Retained Unified facades/dialog XML/localized inputs mixed with original extensions | REVIEW REQUIRED | Identify prior project / Soy / UTLF / Laser contribution chains file by file |
-| Anomaly/GAMMA host, MCM, MGI/MGUI, engine executables, dependency weapon models/textures/sounds, G2X presets, illuminator assets | EXTERNAL DEPENDENCY / NOT BUNDLED | Installed separately; [dependency sources](DEPENDENCIES.md). Only modified bridge scripts/UI listed above are bundled in proposed archives |
+No necessary runtime files were removed. Dropping the required bridge or accepted
+integrations would change the owner-tested package and require explicit approval
+and affected gameplay retesting. Public documentation is updated; runtime/source
+mirroring and archive publication remain held.
 
-## Why the current package cannot be trimmed silently
+Resolution requires exact-file author permission/provenance, applicable notices,
+and lawful corresponding-source availability, followed by final archive revalidation.
+An approved replacement/reduced design with affected gameplay retest is an alternative.
 
-The accepted setup selects Soy Adjustable, UTLF IR, IR Headlamps/illuminator and Laser Settings. Their compatibility code provides tested behavior, while `actor_effects.script` is in the mandatory core. Removing it removes required presentation support. Replacing the accepted selection with Native/absent-integration alternatives would change the shipped feature/install scope; these alternatives have local validation rather than separate owner acceptance. No runtime file was removed or changed to bypass review.
-
-## Package review
-
-- Both final source archives passed integrity/extraction checks; all **85** runtime files match synchronized staging, and selected installed runtime hashes match the TESTED manifest.
-- Clean local candidates exclude internal `SOURCE_VERSIONS.json` and `TESTING.md`, replace only delivery docs, and remove the obsolete installer reference to the excluded testing document. Installer choices and every runtime/asset byte are preserved.
-- Candidate contents and notes remain local, outside this public repository. They are **not distribution-cleared** and were not uploaded.
-- Resolve exact component terms/attribution, finalize applicable license and modified-source notices, then revalidate the final archive/checksum under a newly explicit current-task publication request. Future authorization must never be inferred from this historical task.
+Sources: [UTLF GPL-3.0](https://github.com/MichaelHochriegl/Stalker.Anomaly.Universal.Tactical.Light.Framework/blob/v1.0.1/LICENSE),
+[GAMMA credits](https://github.com/Grokitach/Stalker_GAMMA#credits),
+[Soy Adjustable MIT listing](https://www.moddb.com/mods/stalker-anomaly/addons/adjustable-flashlight-v),
+[Soy UTLF IR Proprietary listing](https://www.moddb.com/mods/stalker-anomaly/addons/soys-ir-mode-for-universal-tactical-light-framework),
+[Soy IR Headlamp MIT/Borksy attribution](https://www.moddb.com/mods/stalker-anomaly/addons/ir-headlamp),
+[Borksy 2.7 release](https://www.moddb.com/mods/laser-settings/downloads/laser-settings-v2-7).

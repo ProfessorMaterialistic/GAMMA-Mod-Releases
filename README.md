@@ -6,9 +6,9 @@
 
 Player light controls and community projects for **S.T.A.L.K.E.R. Anomaly / GAMMA**.
 
-The Light pair is **TESTED / FINAL-FOR-NOW**. Public downloads are held while bundled-file redistribution review is completed.
+The Light 2.1.0 firing correction passed all **10 owner gameplay tests**. Public downloads are held while bundled-file redistribution review is completed.
 
-## One Key Light 2.0
+## One Key Light 2.1.0
 
 Control your installed lights with one key: **Tap, Double Tap, Hold**, or the **Quick Light Menu**. Works independently; add Unified for advanced modes and NVG linking.
 
@@ -20,7 +20,7 @@ Control your installed lights with one key: **Tap, Double Tap, Hold**, or the **
 
 [Download status](mods/One-Key-Light/README.md#download) · [Install](mods/One-Key-Light/INSTALL.md) · [Requirements](mods/One-Key-Light/COMPATIBILITY.md) · [Features](mods/One-Key-Light/FEATURES.md) · [Changelog](mods/One-Key-Light/CHANGELOG.md)
 
-## Unified Player Light Controls 2.0
+## Unified Player Light Controls 2.1.0
 
 Keep light modes and tuning consistent across native controls and supported device dialogs. Link visible/IR channels to NVG state, with AUTO for supported weapon lights and lasers.
 
