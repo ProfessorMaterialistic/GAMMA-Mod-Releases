@@ -1,0 +1,29 @@
+AUTO NVG STOW FOR WEARABLE DEVICES v0.1.2 - RIGHTS AND CREDITS
+
+Copyright 2026 ProfessorMaterialistic. All rights reserved.
+No standalone open-source license has been granted for this original addon.
+Publication does not grant a blanket license for modification or redistribution.
+This notice does not relicense any external dependency.
+
+The package contains five original standalone addon scripts, an original
+English MCM string table and distribution notes. The compatibility code calls
+installed APIs; their implementations are not copied into the package.
+No external scripts, models, animations, sounds, shaders or engine binaries
+are included. Dependencies must be installed separately under their own terms.
+
+Credits for the separate integration environment:
+- ProfessorMaterialistic: Auto NVG Stow implementation and English strings.
+- Wearable Devices team: wearable hardware, input and animation systems.
+  Project: https://ko-fi.com/wearable_dev
+- lizzardman: FDDA Redone and LAM2 native animation infrastructure.
+- theRealBeef: original Beef's NVGs.
+- indiesunpraiser: Better Beef's NVGs.
+- Ncenka: Fatal Error and its separate broken-device semantics (optional).
+- ProfessorMaterialistic and credited upstream contributors: AutoNVG (optional).
+- RavenAscendant: Mod Configuration Menu (MCM).
+- elseform: Custom Mod Categories (optional).
+- Anomaly contributors, GSC Game World and the GAMMA team/community: host game
+  and modding environment. No affiliation or endorsement is implied.
+
+These credits acknowledge separate works and do not grant redistribution rights
+for them. No third-party source, license text or asset is bundled by this addon.

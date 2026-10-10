@@ -32,6 +32,21 @@ Keep light modes and tuning consistent across native controls and supported devi
 
 [Download](mods/Unified-Player-Light-Controls/README.md#download) · [Install](mods/Unified-Player-Light-Controls/INSTALL.md) · [Requirements](mods/Unified-Player-Light-Controls/COMPATIBILITY.md) · [Features](mods/Unified-Player-Light-Controls/FEATURES.md) · [Changelog](mods/Unified-Player-Light-Controls/CHANGELOG.md)
 
+## Auto NVG Stow for Wearable Devices 0.1.2
+
+Automatically lift active ordinary NVGs before viewing Promin or Vektor, then
+restore them when you lower the wearable. Manual NVG input takes priority.
+Fatal Error is optional for the inspected Beef/Better Beef + FDDA stack.
+
+**Released:** [Version 0.1.2](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/releases/tag/auto-nvg-stow-v0.1.2).
+The owner confirmed correct operation on the known deployed Better Beef +
+AutoNVG + Fatal Error setup; other combinations and individual variants are
+source-validated and not separately gameplay-confirmed.
+
+[Download](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/releases/download/auto-nvg-stow-v0.1.2/Auto-NVG-Stow-for-Wearable-Devices-v0.1.2.7z)
+· [Install](mods/Auto-NVG-Stow/INSTALL.md) · [Requirements and limits](mods/Auto-NVG-Stow/COMPATIBILITY.md)
+· [Changelog](mods/Auto-NVG-Stow/CHANGELOG.md)
+
 ## In development
 
 | Project | Status |
