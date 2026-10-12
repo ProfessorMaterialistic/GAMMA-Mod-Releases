@@ -47,6 +47,15 @@ source-validated and not separately gameplay-confirmed.
 · [Install](mods/Auto-NVG-Stow/INSTALL.md) · [Requirements and limits](mods/Auto-NVG-Stow/COMPATIBILITY.md)
 · [Changelog](mods/Auto-NVG-Stow/CHANGELOG.md)
 
+## HUD and inventory projects
+
+- [HUD Readability 0.2.1](mods/HUD-Readability/README.md): customizable stamina/radiation
+  feedback with the owner-confirmed AURA stamina texture repair.
+- [SOTA Wearable Slots 0.1.0](mods/SOTA-Wearable-Slots/README.md): the accepted Bracer,
+  Promin and Vektor row for SOTA/FIUT, with equipped devices omitted from the bag.
+
+Project documentation is available; these two versions do not yet have public download archives.
+
 ## In development
 
 | Project | Status |
