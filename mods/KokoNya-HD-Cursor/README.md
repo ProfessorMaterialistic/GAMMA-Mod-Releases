@@ -5,6 +5,14 @@ DX11 renderer. It preserves the original silhouette, white shade, displayed size
 and click origin. This update adds a consistent versioned MO2 name; runtime files
 are unchanged.
 
+## Image
+
+![White cursor detail against the dark inventory slot texture](images/cursor-detail-illustration.png)
+
+*Framed illustration made from the owner's submitted inventory screenshot. The
+image edit isolates the cursor and is not a pixel-for-pixel capture or a separate
+in-game acceptance test.*
+
 ## Status and availability
 
 IMPLEMENTED and LOCALLY VALIDATED; deployed in the inspected setup. Individual

@@ -5,6 +5,19 @@ white typography and consistent device panels. Previously named WD - Vektor
 Promin Monochrome; this update makes the name/version consistent without changing
 the existing 22 texture files.
 
+## Screenshots
+
+![Promin Biomonitor on the wrist in game, using the monochrome screen theme](images/promin-in-game.png)
+
+*Promin Biomonitor in the owner's game capture, 2026-10-11. AURA supplies the live color bars and body readings.*
+
+![Vektor watch display on the wrist in game](images/vektor-in-game.png)
+
+*Vektor wrist display in a second capture from the same session.*
+
+These screenshots show the installed appearance in one configuration. They do not
+complete the separate interaction, variant or lifecycle acceptance checks.
+
 ## Status and availability
 
 IMPLEMENTED and LOCALLY VALIDATED; deployed in the inspected setup. Separate
