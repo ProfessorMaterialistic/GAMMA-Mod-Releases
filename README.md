@@ -56,6 +56,16 @@ source-validated and not separately gameplay-confirmed.
 
 Project documentation is available; these two versions do not yet have public download archives.
 
+## Wearable screen theme and HD cursor
+
+- [Wearable Devices Monochrome UI 1.0.0](mods/Wearable-Devices-Monochrome-UI/README.md):
+  coordinated white-on-black Promin/Vektor screens, preserving AURA overlays.
+- [KokoNya HD Cursor 0.1.0](mods/KokoNya-HD-Cursor/README.md): higher-resolution
+  cursor artwork with the original size and click origin on the inspected DX11 path.
+
+Both have local validation; separate in-game acceptance remains unrecorded.
+These pages provide documentation, not downloadable archives.
+
 ## In development
 
 | Project | Status |
