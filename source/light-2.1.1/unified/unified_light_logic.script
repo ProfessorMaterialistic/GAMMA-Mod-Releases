@@ -1,0 +1,16 @@
+-- Pure Lua 5.1 policy functions; independent of X-Ray and physical devices.
+OFF=0;ON=1;AUTO=2
+function manual(mode,emitting) if mode==AUTO then return emitting and OFF or ON end;return mode==ON and OFF or ON end
+function cycle(mode,has_auto,direction) return (mode+(direction or 1))%(has_auto and 3 or 2) end
+function aim(policy,zoom,alternate,laser)
+    if not laser then return policy==0 or (zoom and (policy==1 or (policy==2 and alternate))) end
+    if policy==5 then return not (zoom and not alternate) end
+    if policy==6 then return not (zoom and alternate) end
+    if policy==7 then return not zoom end
+    if policy==0 or policy==1 then return true end
+    return zoom and (policy==2 or policy==3 and not alternate or policy==4 and alternate) or false
+end
+function wanted(mode,can_emit,policy,zoom,alternate,laser)
+    return can_emit and (mode==ON or mode==AUTO and aim(policy,zoom,alternate,laser)) or false
+end
+function route(pair,nv) return pair=="head" and (nv and "headlamp_ir" or "headlamp") or (nv and "utlf_ir" or "utlf_visible") end

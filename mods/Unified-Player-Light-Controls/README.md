@@ -1,19 +1,20 @@
-# Unified Player Light Controls 2.1.0
+# Unified Player Light Controls 2.1.1
 
-Owner-tested Light controls with the semi-auto firing correction. [Download version 2.1.0](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/releases/tag/unified-player-light-controls-v2.1.0).
+Authoritative OFF / ON / AUTO for supported tactical White/IR lights and lasers,
+configurable normal/alternate ADS policies, weapon-family persistence and
+NVG linking. Native and IR headlamps remain OFF/ON. One Key is optional.
 
-[Features and controls](FEATURES.md) Â· [Install and rollback](INSTALL.md) Â·
-[Compatibility/dependencies](COMPATIBILITY.md) Â· [Changes](CHANGELOG.md) Â·
-[Credits](CREDITS.md) Â· [Licensing](LICENSE-NOTICES.md)
+Official UTLF 1.0.2 compatibility update, promoted from the owner-accepted RC.
+[Release/download](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/releases/tag/unified-player-light-controls-v2.1.1).
 
-Both mods work independently with their existing optional companion architecture.
-One Key owns gestures/radial and standalone OFF/ON. Unified owns advanced intent,
-supported weapon/laser AUTO and visible/IR linking. No third mandatory core.
+[Features](FEATURES.md) · [Installation/rollback](INSTALL.md) ·
+[Dependencies and limits](COMPATIBILITY.md) · [Changes](CHANGELOG.md) ·
+[Credits](CREDITS.md) · [License notices](LICENSE-NOTICES.md).
 
 ## Download
 
-[Download Unified-Player-Light-Controls-v2.1.0.7z](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/releases/download/unified-player-light-controls-v2.1.0/Unified-Player-Light-Controls-v2.1.0.7z) (78,796 bytes). [Release notes](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/releases/tag/unified-player-light-controls-v2.1.0).
+[Download Unified-Player-Light-Controls-v2.1.1.7z](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/releases/download/unified-player-light-controls-v2.1.1/Unified-Player-Light-Controls-v2.1.1.7z)
+(79,269 bytes). SHA-256: `862af6218aa1cfd470085820c6f4c55e6357ee978b3d26cfafa6920a6b21a710`.
 
-SHA-256: `61c0f9d8951d1117a323f7318483c91e2a8a12aa073b8f2d30b0dce91a4ca14d`
-
-Install through MO2 with the dependencies and file priority in [INSTALL.md](INSTALL.md). Corresponding source and notices are linked in [SOURCE-AVAILABILITY.md](SOURCE-AVAILABILITY.md).
+Older 2.1.0 Releases remain available for rollback. The accepted RC's runtime is
+preserved apart from version labels; documented limitations still apply.

@@ -1,3 +1,13 @@
+# 2.1.1 — October 14, 2026
+
+- Official UTLF 1.0.2 compatibility: input/battery rebase, Unified item tuning
+  rebase and obsolete White/IR replacement-call removal.
+- Upstream HUD/light-pose ownership retained; previous firing fix, AUTO policies,
+  family persistence, controls and installer choices preserved.
+- Promoted owner-accepted RC with version-label/documentation changes only.
+- Real clone attachment/battery transfer and universal beam/magnifier coverage
+  remain documented limitations. Older release notes below are historical.
+
 # Changes from 2.0 to 2.1.0
 
 - Preserve weapon flashlight emission during idle, primary fire and secondary fire

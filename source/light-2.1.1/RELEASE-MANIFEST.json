@@ -1,0 +1,19 @@
+{
+  "version": "2.1.1",
+  "upstream_version": "UTLF v1.0.2",
+  "upstream_commit": "d8c89c385ece3fbfd10e50c054b4618bc3f09d38",
+  "packages": [
+    {
+      "mod": "One-Key-Light",
+      "archive": "One-Key-Light-v2.1.1.7z",
+      "sha256": "e60a1c4c0b8f63972fbe78d447b0512027c494de0b22431891adb23b19a83dd3",
+      "bytes": 99688
+    },
+    {
+      "mod": "Unified-Player-Light-Controls",
+      "archive": "Unified-Player-Light-Controls-v2.1.1.7z",
+      "sha256": "862af6218aa1cfd470085820c6f4c55e6357ee978b3d26cfafa6920a6b21a710",
+      "bytes": 79269
+    }
+  ]
+}

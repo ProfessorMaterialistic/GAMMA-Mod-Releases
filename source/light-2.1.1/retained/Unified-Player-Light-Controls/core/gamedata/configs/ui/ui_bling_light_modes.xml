@@ -1,0 +1,6 @@
+<w>
+  <mode x="25" y="134" width="121" height="24" stretch="1">
+    <texture>ui_button_ordinary</texture>
+    <text font="letterica16" align="c" r="180" g="210" b="180" a="255" />
+  </mode>
+</w>

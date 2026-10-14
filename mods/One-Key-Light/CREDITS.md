@@ -1,7 +1,7 @@
-# One Key Light 2.1.0 credits
+# One Key Light 2.1.1 credits
 
 - **Bling / ProfessorMaterialistic:** authored Light controls, shared compatibility, Native adapter, original geometric radial textures and 26-cell semantic artwork.
-- **MichaelHochriegl / UTLF:** modified upstream scripts. [Project](https://github.com/MichaelHochriegl/Stalker.Anomaly.Universal.Tactical.Light.Framework), [v1.0.1 GPL-3.0 text](https://github.com/MichaelHochriegl/Stalker.Anomaly.Universal.Tactical.Light.Framework/blob/v1.0.1/LICENSE). Preserve its original Kmack, Verdatim, AndTheHeroIs, Priler and Grok attribution chain.
+- **MichaelHochriegl / UTLF:** modified upstream scripts. [Project](https://github.com/MichaelHochriegl/Stalker.Anomaly.Universal.Tactical.Light.Framework), [v1.0.2 GPL-3.0 text](https://github.com/MichaelHochriegl/Stalker.Anomaly.Universal.Tactical.Light.Framework/blob/v1.0.2/LICENSE). Preserve its original Kmack, Verdatim, AndTheHeroIs, Priler and Grok attribution chain.
 - **GAMMA / Grok and original component contributors:** 3D PDA and headlamp animation source. [GAMMA source and credits](https://github.com/Grokitach/Stalker_GAMMA).
 - **Soy:** Adjustable Headlamps, UTLF IR Mode and IR Headlamps script/UI integrations.
 - **Borksy:** [Laser Settings](https://www.moddb.com/mods/laser-settings/downloads/laser-settings-v2-7) compatibility and tuning.

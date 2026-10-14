@@ -1,3 +1,11 @@
+# October 14, 2026 — Light 2.1.1
+
+- One Key Light and Unified Player Light Controls support official UTLF 1.0.2.
+- Input/battery/item integrations rebased; obsolete replacement calls removed.
+- Owner-accepted RC runtime retained with stable metadata; previous firing fix,
+  controls, themes, AUTO and family persistence preserved. Limits remain documented.
+- Separate installable archives, checksums and portable corresponding source.
+
 # Release hub changelog
 
 ## 2026-10-04 - documentation and organization

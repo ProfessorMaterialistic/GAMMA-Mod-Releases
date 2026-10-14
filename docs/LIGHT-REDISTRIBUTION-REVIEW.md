@@ -16,3 +16,13 @@ See the [versioned source](../source/light-2.1.0/README.md),
 [credits](../source/light-2.1.0/CREDITS.md).
 [One Key Light 2.1.0](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/releases/tag/one-key-light-v2.1.0) and
 [Unified Player Light Controls 2.1.0](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/releases/tag/unified-player-light-controls-v2.1.0) are published with verified archives.
+
+## October 14 Light 2.1.1
+
+Existing component notices/permissions are retained for the identified integrated
+derivatives. Updated UTLF 1.0.2 input/battery/item source remains GPL-3.0; no full
+framework/assets are bundled. The IR adapter change removes obsolete calls within
+the existing derivative grant. No new third-party component/artwork is introduced.
+Preferred source/generators/necessary inputs are under source/light-2.1.1 and
+reproduce all final runtime/assets. Stable labels/docs differ from accepted RC;
+gameplay behavior does not. Included original license texts/credits remain.

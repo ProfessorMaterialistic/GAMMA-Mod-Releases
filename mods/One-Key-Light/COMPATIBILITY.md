@@ -1,6 +1,20 @@
-# Compatibility and dependencies — 2.1.0
+# Compatibility and dependencies — 2.1.1
 
-## Tested engine and scope
+## Current acceptance and supported scope
+
+Official UTLF v1.0.2 (`d8c89c385ece3fbfd10e50c054b4618bc3f09d38`)
+is the supported tactical-light integration. Its new HUD and light-pose modules
+remain owned by the framework; obsolete replacement machinery is not bundled.
+The owner confirmed the exact RC pair working in the current GAMMA setup. No
+new engine build is supplied or universal host/weapon certification asserted.
+
+33 focused local groups cover controls, routing, policies, family persistence,
+firing, battery pause and mocked recovery. Real clone attachment/battery transfer,
+all magnifier variants and rendered beam continuity remain accepted limitations.
+Install selected dependencies separately. Core controls work without optional
+integrations; do not select a FOMOD integration when its dependency is absent.
+
+## Historical 2.1.0 engine baseline
 
 The October 10 owner retest passed all ten Light cases on the deployed candidate:
 weapon flashlight ON/AUTO, laser ON/AUTO, simultaneous output, full-auto comparison,
@@ -22,14 +36,14 @@ base Anomaly and other modpacks are unverified. No universal minimum API is asse
 | Anomaly/GAMMA and matching engine gamedata | REQUIRED host; no independent numbered host pin established |
 | Mod Configuration Menu (MCM) | REQUIRED; installed native/CMC MCM inspected, no independent numbered pin asserted |
 | GAMMA 3D PDA and Headlamp Animations | REQUIRED presentation support |
-| UTLF 1.0.1 and supported weapon/attachment registration | OPTIONAL INTEGRATION, required for weapon flashlight features |
+| UTLF 1.0.2 and supported weapon/attachment registration | OPTIONAL INTEGRATION, required for weapon flashlight features |
 | Soy Adjustable Headlamps 1.0 | OPTIONAL INTEGRATION for adjustable normal headlamp |
 | Soy UTLF IR Mode 1.03 | OPTIONAL INTEGRATION for IR weapon lights; needs UTLF and suitable NVGs |
 | Soy IR Headlamps 1.3.0 plus installed NVG illuminator | OPTIONAL INTEGRATION for IR headlamp |
 | Borksy Laser Settings 2.7, BaS-compatible laser support and laser-capable weapon | OPTIONAL INTEGRATION for laser controls |
 | MGI/MGUI 0.3.4 | OPTIONAL INTEGRATION for GUI launchers; core works without it |
 | Native/G2X presets | OPTIONAL INTEGRATION; assets installed separately |
-| Matching companion 2.1.0 | OPTIONAL INTEGRATION; no third mandatory core |
+| Matching companion 2.1.1 | OPTIONAL INTEGRATION; no third mandatory core |
 | Python, Lupa Lua 5.1, Pillow, 7-Zip | DEVELOPMENT ONLY; never runtime requirements |
 
 Laser Settings lists BaS as a prerequisite; use GAMMA’s installed compatible

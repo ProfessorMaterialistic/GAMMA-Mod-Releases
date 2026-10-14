@@ -1,0 +1,142 @@
+defaults={enabled=true,key=DIK_keys.MOUSE_5,tap="headlamp",double="utlf_visible",hold="laser",double_ms=225,hold_ms=300,shortcut=true,modifier=1,menu_key=-1,menu_selection=1,menu_size=160,menu_opacity=155,hide_bound=false}
+local menu_options={shortcut=true,modifier=true,menu_key=true,menu_selection=true,menu_size=true,menu_opacity=true,hide_bound=true}
+local visibility_names={}
+defaults.gesture_behavior=1;defaults.radial_labels=1;defaults.icon_style=1
+menu_options.radial_labels=true;menu_options.icon_style=true
+defaults.indicator_style=1;defaults.show_battery=true;defaults.radial_behavior=1;defaults.allow_movement=true
+defaults.battery_color=true;defaults.radial_theme=1;defaults.right_click=2
+defaults.show_locks=true;menu_options.show_locks=true
+menu_options.battery_color=true;menu_options.radial_theme=true;menu_options.right_click=true
+menu_options.indicator_style=true;menu_options.show_battery=true;menu_options.radial_behavior=true;menu_options.allow_movement=true
+function path(id) return "one_key_lights/"..(menu_options[id] and "menu/" or "controls/")..id end
+-- Default functors run after gathering; retain preferences from the old flat page.
+function legacy_default(id,kind)
+    local old=axr_main.config:r_value("mcm","one_key_lights/"..id,kind)
+    if old=="headlamp_situational" and (id=="tap" or id=="double" or id=="hold") then return "headlamp" end
+    if old~=nil then return old end
+    return defaults[id]
+end
+-- MCM destroys page controls when navigating or rebuilding its option list.
+-- Never retain native UI objects beyond the hook that created them.
+function status_hook(index,anchor,handlers)
+    local control=handlers and handlers.desc
+    if control then
+        local lines=one_key_lights_bindings.status_lines()
+        control:SetText(lines[index] or "")
+    end
+end
+function refresh_status(ui)
+    -- Only explicit button callbacks supply a live MCM window.
+    -- Binding operations and settings notifications must not touch cached UI.
+    light_compat.refresh_mcm(ui)
+end
+function clear_binding(ui)
+    one_key_lights_bindings.clear()
+    refresh_status(ui)
+end
+function restore_binding(ui)
+    one_key_lights_bindings.restore()
+    refresh_status(ui)
+end
+function on_mcm_load()
+    light_compat.install_mcm_layout()
+    local content={}
+    for _,a in ipairs(one_key_lights_actions.list(false)) do content[#content+1]={a.id,a.name} end
+    local function desc(id,text) return {id=id,type="desc",text=text} end
+    local function option(id,kind,val,extra)
+        local o={id=id,type=kind,val=val,def={legacy_default,id,val}}
+        for k,v in pairs(extra or {}) do o[k]=v end
+        return o
+    end
+    local controls={
+        {id="general",type="title",text="GENERAL"},
+        option("enabled","check",1,{caption="Enable One Key Light"}),
+        option("key","key_bind",2,{caption="Main Light Control Key"}),
+        {id="linking",type="title",text="LIGHT LINKING"}
+    }
+    if light_compat.controller() then
+        controls[#controls+1]=light_compat.mcm_link_option("weapon")
+        controls[#controls+1]=light_compat.mcm_link_option("head")
+        controls[#controls+1]=desc("link_help","NVG Linked automatically switches visible and IR lighting with your NVGs.")
+    else
+        controls[#controls+1]=desc("link_help","NVG Linked requires Unified Player Light Controls.")
+    end
+    controls[#controls+1]={id="gestures",type="title",text="GESTURES"}
+    for _,entry in ipairs({{"tap","Tap Action"},{"double","Double Tap Action"},{"hold","Hold Action"}}) do
+        local id=entry[1]
+        controls[#controls+1]=option(id,"list",0,{caption=entry[2],content=content,no_str=true,
+            curr={function()
+                local value=axr_main.config:r_value("mcm",path(id),0)
+                if value==nil then value=legacy_default(id,0) end
+                return value=="headlamp_situational" and "headlamp" or value
+            end},functor={function(value) ui_mcm.set(path(id),value) end}})
+    end
+    controls[#controls+1]=option("double_ms","track",2,{caption="Double Tap Window",min=100,max=500,step=25})
+    controls[#controls+1]=option("hold_ms","track",2,{caption="Hold Threshold",min=150,max=1000,step=25})
+    if light_compat.controller() then
+        controls[#controls+1]=option("gesture_behavior","list",2,{caption="Gesture Behavior",content={{1,"Smart ON/OFF"},{2,"OFF -> ON -> AUTO"}},no_str=true})
+    end
+    local menu={
+        option("menu_key","key_bind",2),
+        option("menu_selection","list",2,{content={{1,"Tap: click / Hold: release"},{2,"Left click only (release closes)"},{3,"Release Opening Key"}},no_str=true}),
+        desc("help","Left click only: hold the opening key, click to change lights, release to close without selecting. Tap-open menus close with the opening key, center or Escape. Release Opening Key selects the hovered light on release."),
+        option("shortcut","check",1),option("modifier","list",2,{content={{1,"Shift"},{2,"Ctrl"},{3,"Alt"}},no_str=true}),
+    }
+    menu[#menu+1]=option("radial_labels","list",2,{caption="Label Mode",content={{1,"Icon + Text"},{2,"Icon Only"},{3,"Text Only"}},no_str=true})
+    menu[#menu+1]=option("icon_style","list",2,{caption="Icons",content={{1,"Tactical"},{2,"Minimal Icons"}},no_str=true})
+    menu[#menu+1]=option("menu_size","track",2,{min=120,max=240,step=10})
+    menu[#menu+1]=option("menu_opacity","track",2,{min=60,max=230,step=5})
+    menu[#menu+1]=option("hide_bound","check",1)
+    local function caption(text)
+        return {function(anchor,handlers) if handlers and handlers.cap then handlers.cap:TextControl():SetText(text) end end}
+    end
+    menu[#menu+1]=option("indicator_style","list",2,{content={{1,"[OFF] / [ON] / [AUTO]"},{2,"Blank / O / OO"},{3,"Blank / X / XX"},{4,"Gray / Green / Amber dots"}},no_str=true,ui_hook_functor=caption("Light state indicators")})
+    menu[#menu+1]=option("show_battery","check",1,{ui_hook_functor=caption("Show real battery charge (%)")})
+    menu[#menu+1]=option("show_locks","check",1,{ui_hook_functor=caption("Show locks for unavailable lights")})
+    menu[#menu+1]=option("battery_color","check",1,{ui_hook_functor=caption("Color battery charge: green / yellow / red")})
+    menu[#menu+1]=option("radial_theme","list",2,{content={{1,"Dark"},{2,"Black and White"},{3,"Light"},{4,"Arc Dark"},{5,"GAMMA"},{6,"Loners"},{7,"Bandits"},{8,"Clear Sky"},{9,"Duty"},{10,"Freedom"},{11,"Mercenaries"},{12,"Military"},{13,"Ecologists"},{14,"Monolith"},{15,"Renegades"},{16,"Sin"},{17,"UNISG"},{18,"Zombified"},{19,"GAMMA Default"},{20,"Minimal Dark"},{21,"PDA Green"},{22,"Amber Tactical"},{23,"NVG Green"},{24,"OLED"},{25,"Monochrome"}},no_str=true,ui_hook_functor=caption("Radial color theme")})
+    menu[#menu+1]=option("right_click","list",2,{content={{1,"Close radial"},{2,"Cycle backward / choose highlighted mode"},{3,"Same as left click"},{4,"Toggle OFF / last ON or AUTO"}},no_str=true,ui_hook_functor=caption("Right-click action")})
+    menu[#menu+1]=option("radial_behavior","list",2,{content={{1,"Single radial: cycle OFF / ON / AUTO"},{2,"Two-step radial: choose a mode"},{3,"Original quick toggle"}},no_str=true,ui_hook_functor=caption("Radial light selection")})
+    menu[#menu+1]=option("allow_movement","check",1,{ui_hook_functor=caption("Allow movement while radial is open")})
+    menu[#menu+1]=desc("state_help","Headlamps always toggle OFF / ON. With Unified, weapon lights and Laser can cycle OFF > ON > AUTO. A linked headlamp switches Normal / IR with NVG state. The two-step picker offers only supported modes. Movement uses your normal bindings; the mouse controls the menu. Icons use at least 220px.")
+    for _,a in ipairs(one_key_lights_actions.list(true,true)) do
+        local id="show_"..a.id
+        defaults[id]=true; menu_options[id]=true; visibility_names[id]=a.name
+        menu[#menu+1]=option(id,"check",1,{ui_hook_functor={function(anchor,handlers)
+            if handlers and handlers.cap then handlers.cap:TextControl():SetText("Show "..a.name) end
+        end}})
+    end
+    -- Keep native controls and persisted option paths; group the existing rows only.
+    local by_id={};for _,opt in ipairs(menu) do by_id[opt.id]=opt end
+    local organized={}
+    local groups={
+        {"QUICK MENU",{"menu_key","menu_selection","shortcut","modifier","radial_behavior","right_click","allow_movement","hide_bound"}},
+        {"APPEARANCE",{"radial_theme","menu_size","menu_opacity"}},
+        {"ICONS & LABELS",{"radial_labels","icon_style","indicator_style","show_battery","show_locks","battery_color"}}
+    }
+    for index,group in ipairs(groups) do
+        organized[#organized+1]={id="section_"..index,type="title",text=group[1]}
+        for _,id in ipairs(group[2]) do organized[#organized+1]=assert(by_id[id]) end
+    end
+    for _,opt in ipairs(menu) do if opt.id:find("^show_") and opt.id~="show_battery" and opt.id~="show_locks" then organized[#organized+1]=opt end end
+    menu=organized
+    local binding={
+        {id="title",type="title",text="ANOMALY TORCH BINDING"},
+        desc("help","Use this if One Key Light replaces your normal Anomaly torch key."),
+        {id="clear",type="button",caption="Clear Vanilla Torch Binding",functor_ui={clear_binding}},
+        {id="restore",type="button",caption="Restore Vanilla Torch Binding",functor_ui={restore_binding}},
+        {id="status",type="desc",text="",ui_hook_functor={function(anchor,handlers)
+            if handlers and handlers.desc then
+                handlers.desc:SetText(one_key_lights_bindings.status())
+                handlers.desc:AdjustHeightToText()
+                handlers.desc:SetWndSize(vector2():set(handlers.desc:GetWidth(),handlers.desc:GetHeight()+20))
+            end
+        end}}
+    }
+    local compatibility=light_compat.mcm_integrations()
+    local sections={}
+    for _,section in ipairs({{"controls","Controls",controls},{"menu","Quick Menu",menu},{"bindings","Anomaly Torch Binding",binding},{"compatibility","Compatibility",compatibility}}) do
+        sections[#sections+1]={id=section[1],text="ui_mcm_one_key_lights_section_"..section[1],sh=true,gr=section[3]}
+    end
+    return {id="one_key_lights",text="ui_mcm_menu_one_key_lights",gr=sections}
+end

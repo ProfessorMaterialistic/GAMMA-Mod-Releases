@@ -1,4 +1,4 @@
-# Unified Player Light Controls 2.1.0 features and configuration
+# Unified Player Light Controls 2.1.1 features and configuration
 
 [Overview](README.md) · [Installation](INSTALL.md) · [Requirements](COMPATIBILITY.md)
 
@@ -48,7 +48,7 @@ Availability depends on the selected backend and separately installed dependency
 
 ## With One Key / without One Key
 
-One Key controls gestures and menu; Unified owns advanced modes and reconciliation. Use matching 2.1.0 versions and matching FOMOD selections. Either companion order works when shared files match. One Key is optional; no third core is required. Removing Unified leaves One Key standalone OFF/ON; removing One Key leaves Unified usable through native/device controls and optional MGI.
+One Key controls gestures and menu; Unified owns advanced modes and reconciliation. Use matching 2.1.1 versions and matching FOMOD selections. Either companion order works when shared files match. One Key is optional; no third core is required. Removing Unified leaves One Key standalone OFF/ON; removing One Key leaves Unified usable through native/device controls and optional MGI.
 
 ## Limits, issues and help
 

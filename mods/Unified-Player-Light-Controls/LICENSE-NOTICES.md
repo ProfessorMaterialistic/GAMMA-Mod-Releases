@@ -1,11 +1,11 @@
-# License notices — Light 2.1.0
+# License notices — Light 2.1.1
 
 Original authors retain their copyrights. These packages contain original Light
 code/art and modified upstream components; their terms are scoped below.
 
 - Project-authored Light modules, original radial rings/dot and 26-cell semantic
   atlas: Bling / ProfessorMaterialistic; GPL-3.0. Original drawing source is provided.
-- UTLF 1.0.1 input, battery and item derivatives: MichaelHochriegl and credited
+- UTLF 1.0.2 input, battery and item derivatives: MichaelHochriegl and credited
   upstream contributors; GPL-3.0. See UTLF-GPL-3.0.txt and CREDITS.md.
 - GAMMA 3D PDA/Headlamp actor_effects derivative: Grok/GAMMA and original
   contributors; AGPL-3.0 and original-author attribution. See GAMMA-AGPL-3.0.txt.

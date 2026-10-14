@@ -1,19 +1,20 @@
-# One Key Light 2.1.0
+# One Key Light 2.1.1
 
-Owner-tested Light controls with the semi-auto firing correction. [Download version 2.1.0](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/releases/tag/one-key-light-v2.1.0).
+One-key Tap / Double Tap / Hold controls, a radial quick menu with 25 themes,
+Tactical/Minimal icon modes and standalone OFF/ON operation. Add Unified for
+advanced AUTO and NVG linking.
 
-[Features and controls](FEATURES.md) Â· [Install and rollback](INSTALL.md) Â·
-[Compatibility/dependencies](COMPATIBILITY.md) Â· [Changes](CHANGELOG.md) Â·
-[Credits](CREDITS.md) Â· [Licensing](LICENSE-NOTICES.md)
+Official UTLF 1.0.2 compatibility update, promoted from the owner-accepted RC.
+[Release/download](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/releases/tag/one-key-light-v2.1.1).
 
-Both mods work independently with their existing optional companion architecture.
-One Key owns gestures/radial and standalone OFF/ON. Unified owns advanced intent,
-supported weapon/laser AUTO and visible/IR linking. No third mandatory core.
+[Features](FEATURES.md) · [Installation/rollback](INSTALL.md) ·
+[Dependencies and limits](COMPATIBILITY.md) · [Changes](CHANGELOG.md) ·
+[Credits](CREDITS.md) · [License notices](LICENSE-NOTICES.md).
 
 ## Download
 
-[Download One-Key-Light-v2.1.0.7z](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/releases/download/one-key-light-v2.1.0/One-Key-Light-v2.1.0.7z) (99,220 bytes). [Release notes](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/releases/tag/one-key-light-v2.1.0).
+[Download One-Key-Light-v2.1.1.7z](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/releases/download/one-key-light-v2.1.1/One-Key-Light-v2.1.1.7z)
+(99,688 bytes). SHA-256: `e60a1c4c0b8f63972fbe78d447b0512027c494de0b22431891adb23b19a83dd3`.
 
-SHA-256: `0a31e0b4db08fb5a4bd7795a39f88d3ebd66e2a8dbeb1c433b775713850be2b1`
-
-Install through MO2 with the dependencies and file priority in [INSTALL.md](INSTALL.md). Corresponding source and notices are linked in [SOURCE-AVAILABILITY.md](SOURCE-AVAILABILITY.md).
+Older 2.1.0 Releases remain available for rollback. The accepted RC's runtime is
+preserved apart from version labels; documented limitations still apply.

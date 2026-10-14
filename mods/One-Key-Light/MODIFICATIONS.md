@@ -1,14 +1,16 @@
-# Modified-source disclosure — October 10, 2026
+# Modified-source disclosure — October 14, 2026
 
-Bling / ProfessorMaterialistic modified the integrated scripts for Light 2.1.0.
-UTLF changes cover coordinated input ownership, AUTO battery pause and capability
-checks; the semi-auto correction preserves emission through idle/fire/fire2.
-Soy bridges add coordinated White/IR intent, saved tuning, NVG routes and guarded
-input callbacks. Laser Settings retains upstream appearance/reset/export policies
-while coordinating input and supported modes. GAMMA actor_effects keeps its
-animation presentation with coalesced switching, cancellation and single feedback.
-Earlier project UI was adapted for shared modes and preserved MCM/navigation.
+Bling / ProfessorMaterialistic maintains One Key gesture/radial/standalone
+controls and Unified authoritative modes, AUTO policies, persistence and linking.
+Physical device ownership and original upstream contributors remain credited.
 
-The final publication changes license/source notices, documentation and installer
-descriptions only. All 85 runtime/asset files remain identical to the existing
-2.1.0 review archives. No new gameplay implementation or acceptance is asserted.
+For 2.1.1, UTLF input/battery/item integration patches are rebased onto official
+v1.0.2. Obsolete clear_replacement calls and old battery transfer bookkeeping
+are removed. Light input ownership, AUTO battery pause and tuning limits remain.
+Soy IR adapters remove obsolete replacement calls; the framework retains HUD
+recovery and beam pose. Existing GAMMA animations, Soy headlamp and Borksy laser
+bridges are unchanged. The previous idle/fire/fire2 correction remains.
+
+Stable promotion changes labels, installer presentation and release documentation
+only. Gameplay-affecting runtime source is identical to the accepted RC. Original
+upstream framework behavior is not presented as new Light functionality.

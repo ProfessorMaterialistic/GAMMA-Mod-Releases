@@ -1,0 +1,20 @@
+<w>
+  <lock_part x="0" y="0" width="2" height="2" stretch="1">
+    <texture>oklc_lock_solid</texture>
+  </lock_part>
+  <icon x="0" y="0" width="32" height="32" stretch="1">
+    <texture>oklc_dot</texture>
+  </icon>
+  <sector x="0" y="0" width="160" height="160" stretch="1">
+    <texture>oklc_ring_5_1</texture>
+  </sector>
+  <label x="0" y="0" width="64" height="16">
+    <text font="letterica16" align="c" vert_align="c" r="225" g="225" b="225" a="255" />
+  </label>
+  <dot x="0" y="0" width="4" height="4" stretch="1">
+    <texture>oklc_dot</texture>
+  </dot>
+  <cancel x="0" y="0" width="24" height="20">
+    <text font="letterica16" align="c" r="150" g="165" b="165" a="180" />
+  </cancel>
+</w>
