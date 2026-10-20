@@ -1,0 +1,36 @@
+function bridge(id)
+    local api=light_compat.module("unified_lights")
+    if api then return api,id end
+end
+function select(id,value)
+    local api=bridge(id)
+    if api then return api.set_mode(id,value) end
+    return one_key_lights_standalone.select(id,value)
+end
+function cycle(id,direction)
+    local api=bridge(id)
+    if api then return api.cycle_mode(id,direction) end
+    return one_key_lights_standalone.toggle(id)
+end
+function toggle(id)
+    local api=bridge(id);if api then return api.manual_toggle(id) end
+end
+function toggle_current(id)
+    local api=bridge(id);if api then return api.restore_toggle(id) end
+    return cycle(id)
+end
+function battery(id) local api=bridge(id);return api and api.get_battery(id) or light_backends.battery(id) end
+function state(id)
+    local api=bridge(id)
+    local s=api and api.get_state(id) or {installed=light_backends.installed(id),equipped=light_backends.equipped(id),can_emit=light_backends.can_emit(id),
+        intent=one_key_lights_standalone.mode(id),emitting=light_backends.emitting(id),supports_auto=false,battery=light_backends.battery(id),route=id,linked=false}
+    s.available=s.installed;s.locked=not s.equipped;s.value=s.intent
+    s.percent=type(s.battery)=="number" and math.floor(math.max(0,math.min(1,s.battery))*100+0.5) or nil
+    return s
+end
+function indicator(value,style)
+    if style==2 then return value==2 and "OO" or value==1 and "O" or "" end
+    if style==3 then return value==2 and "XX" or value==1 and "X" or "" end
+    if style==4 then return "" end
+    return ({[0]="[OFF]",[1]="[ON]",[2]="[AUTO]"})[value] or "[OFF]"
+end

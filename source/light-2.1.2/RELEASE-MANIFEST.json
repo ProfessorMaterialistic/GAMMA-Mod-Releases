@@ -1,0 +1,8 @@
+{
+  "version": "2.1.2",
+  "accepted_runtime_source": "939d30d789a6ed75d7eda85a4c528cbf6cc59798",
+  "upstream_version": "UTLF v1.0.2",
+  "upstream_commit": "d8c89c385ece3fbfd10e50c054b4618bc3f09d38",
+  "runtime_files": 85,
+  "acceptance": "Owner confirmed matched RC pair works in game; individual matrix rows not separately reported."
+}

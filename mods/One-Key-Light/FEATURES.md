@@ -1,4 +1,4 @@
-# One Key Light 2.1.1 features and configuration
+# One Key Light 2.1.2 features and configuration
 
 [Overview](README.md) · [Installation](INSTALL.md) · [Requirements](COMPATIBILITY.md)
 

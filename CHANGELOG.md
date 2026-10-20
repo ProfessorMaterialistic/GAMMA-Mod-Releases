@@ -1,3 +1,10 @@
+# October 19, 2026 — Light 2.1.2
+
+- Release both owner-accepted Light mods with the supported ADS-transition fix.
+- Preserve UTLF 1.0.2, firing, AUTO, valid suspension and battery behavior.
+- Publish portable corresponding source and exact .7z checksums.
+- Headlamp reactivation has no verified code cause or claimed specific fix.
+
 # October 14, 2026 — Light 2.1.1
 
 - One Key Light and Unified Player Light Controls support official UTLF 1.0.2.

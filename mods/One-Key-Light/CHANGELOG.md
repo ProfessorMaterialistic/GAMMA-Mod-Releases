@@ -1,3 +1,9 @@
+# 2.1.2 — October 19, 2026
+
+- Keep weapon lights available through supported aim-start/end states.
+- Preserve OFF/ON/AUTO, firing, UTLF 1.0.2, suspension and battery behavior.
+- Promote the owner-accepted matched RC pair; no speculative headlamp change.
+
 # 2.1.1 — October 14, 2026
 
 - Official UTLF 1.0.2 compatibility: input/battery rebase, Unified item tuning

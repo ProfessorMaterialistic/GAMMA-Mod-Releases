@@ -1,0 +1,333 @@
+-- Authoritative intent and reconciliation. One Key calls this public API only.
+api_version=2
+local aliases={weapon="utlf_visible",ir="utlf_ir",ir_weapon="utlf_ir",ir_headlamp="headlamp_ir",head="headlamp_situational"}
+local modes={utlf_visible="weapon",utlf_ir="ir",laser="laser",headlamp="headlamp",headlamp_ir="headlamp_ir"}
+local ids={"utlf_visible","utlf_ir","laser","headlamp","headlamp_ir"}
+local applying=false
+local last,next_probe,dirty={},0,true
+local next_discovery=0
+local cached_family,cached_section
+local last_route={}
+local weapon_goal,laser_goal,head_goal
+local seeded={}
+local player_seeded=false
+local function normalize(id) return aliases[id] or id end
+function supports_auto(id)
+    id=normalize(id)
+    return id=="utlf_visible" or id=="utlf_ir" or id=="weapon_situational" or id=="laser"
+end
+function is_applying() return applying end
+function family()
+    local w=light_backends.weapon();local section=w and w:section()
+    if section~=cached_section then cached_section=section;cached_family=section and bling_light_profiles.family(section) end
+    return cached_family
+end
+local function key(id,field)
+    id=normalize(id)
+    if id=="weapon_situational" or id=="headlamp_situational" then
+        local pair=id=="weapon_situational" and "weapon" or "head"
+        local f=pair=="head" and "player" or family()
+        return f and "bling_situational/"..pair.."/"..f.."/"..field
+    end
+    local f=(id=="headlamp" or id=="headlamp_ir") and "player" or family()
+    return f and "bling_light_control/"..f.."/"..(modes[id] or id).."/"..field
+end
+function read(id,field,default)
+    local k=key(id,field);return k and unified_light_store.get(k,default) or default
+end
+function write(id,field,value)
+    if field=="auto_policy" and not supports_auto(id) then return false end
+    local k=key(id,field);return k and unified_light_store.put(k,value)
+end
+local function link_key(pair) return pair=="weapon" and "bling_light_profiles/auto_nv" or "bling_situational/head/linked" end
+function get_linked(pair) return unified_light_store.get(link_key(pair),0)==1 end
+function owner(id)
+    id=normalize(id)
+    if (id=="utlf_visible" or id=="utlf_ir") and get_linked("weapon") then return "weapon_situational" end
+    if (id=="headlamp" or id=="headlamp_ir") and get_linked("head") then return "headlamp_situational" end
+    return id
+end
+function get_route(id)
+    id=owner(id)
+    if id=="weapon_situational" then return unified_light_logic.route("weapon",light_backends.nv()) end
+    if id=="headlamp_situational" then return unified_light_logic.route("head",light_backends.nv()) end
+    return id
+end
+function policy(id)
+    id=normalize(id)
+    if not supports_auto(id) then return nil end
+    if id=="weapon_situational" then id=get_route(id) end
+    local v=read(id,"auto_policy")
+    if v~=nil then return v end
+    local f=family()
+    if id=="utlf_visible" or id=="utlf_ir" then
+        local _,_,attachment=light_backends.context()
+        return attachment and bling_light_profiles.get(modes[id],attachment,"aim_policy",1) or 1
+    end
+    if id=="laser" then return f and bling_light_profiles.get("laser",f,"policy",unified_light_store.get("bling_laser_policy/"..f,2)) or 2 end
+end
+local function independent(id)
+    local saved=read(id,"mode")
+    if saved==0 or saved==1 then return saved end
+    if saved==2 then return supports_auto(id) and 2 or 1 end
+    return light_backends.requested(id) and 1 or 0
+end
+local function seed()
+    local f=family()
+    if seeded[f or "player"] and player_seeded then return end
+    -- Idempotent lazy migration: capture legacy physical/requested defaults once.
+    unified_light_store.edit(function()
+        if not player_seeded then
+            for _,id in ipairs({"headlamp","headlamp_ir","headlamp_situational"}) do
+                for _,field in ipairs({"mode","last_active"}) do
+                    if read(id,field)==2 then write(id,field,1) end
+                end
+                unified_light_store.remove(key(id,"auto_policy"))
+            end
+            for _,field in ipairs({"headlamp_auto_policy","headlamp_ir_auto_policy","animate_auto_headlamp"}) do
+                unified_light_store.remove("unified_lights/"..field)
+            end
+            player_seeded=true
+        end
+        for _,id in ipairs(ids) do
+            if key(id,"mode") and read(id,"mode")==nil then
+                local mode=light_backends.requested(id) and 1 or 0
+                write(id,"mode",mode)
+            end
+        end
+        if f then unified_light_store.put("unified_lights/migrated/"..f,2) end
+    end)
+    seeded[f or "player"]=true
+end
+function get_mode(id)
+    id=owner(id)
+    local saved=read(id,"mode")
+    if saved~=nil then return supports_auto(id) and saved or (saved==0 and 0 or 1) end
+    return independent(get_route(id))
+end
+function get_battery(id) return light_backends.battery(get_route(id)) end
+local function zoom()
+    local w=light_backends.weapon();local c=w and w:cast_Weapon()
+    return c and c:IsZoomed()==true or false,c and c:GetZoomType()==1 or false
+end
+local function weapon_zoom()
+    if get_mode("utlf_visible")==2 or get_mode("utlf_ir")==2 then return zoom() end
+    return false,false
+end
+function get_state(id)
+    id=owner(id);local route=get_route(id)
+    return {installed=light_backends.installed(route),equipped=light_backends.equipped(route),can_emit=light_backends.can_emit(route),intent=get_mode(id),
+        emitting=light_backends.emitting(route),supports_auto=supports_auto(id),battery=get_battery(id),route=route,weapon_family=family(),backend=light_backends.name(route),
+        aim_policy=policy(route),linked=id=="weapon_situational" or id=="headlamp_situational"}
+end
+function invalidate() dirty=true;last={};cached_section=nil;next_probe=0;seeded={};player_seeded=false;weapon_goal=nil;laser_goal=nil;head_goal=nil end
+local function native(fn)
+    local was=applying;applying=true;local ok,result=pcall(fn);applying=was
+    if not ok then
+        if light_compat.link_active() then
+            light_compat.link_stage("native:lua-error",type(result)=="string" and result or type(result));light_compat.link_finish(false);error(result)
+        end
+        light_compat.warn("reconcile",result)
+    end
+    return ok and result~=false
+end
+local function stop_weapon()
+    light_backends.set("utlf_ir",false);light_backends.set("utlf_visible",false)
+end
+function reconcile(manual_id,animate,manual_changed)
+    if applying or not db or not db.actor then return false end
+    light_compat.link_stage("reconcile:seed")
+    seed()
+    local z,a=weapon_zoom();local nv=light_backends.nv()
+    return native(function()
+        local route
+        if get_linked("weapon") then route=unified_light_logic.route("weapon",nv)
+        else
+            local preferred=read("emitter","preferred",0)
+            route=preferred==1 and "utlf_ir" or "utlf_visible"
+            if independent(route)==0 then
+                local other=route=="utlf_ir" and "utlf_visible" or "utlf_ir"
+                if independent(other)~=0 then route=other end
+            end
+        end
+        light_compat.link_stage("reconcile:weapon-route",route)
+        local wanted=unified_light_logic.wanted(get_mode(route),light_backends.can_emit(route),policy(route),z,a,false)
+        local old_weapon_route=light_backends.requested("utlf_ir") and "utlf_ir" or "utlf_visible"
+        local old_weapon_output=light_backends.emitting(old_weapon_route)
+        local white_before=light_backends.requested("utlf_visible")
+        local ir_before=light_backends.requested("utlf_ir")
+        if light_compat.link_active() then light_compat.link_stage("weapon:state-before",tostring(white_before).."/"..tostring(ir_before).."/"..tostring(old_weapon_output).."/NV="..tostring(nv)) end
+        local manual_weapon=manual_changed and (manual_id=="utlf_visible" or manual_id=="utlf_ir" or manual_id=="weapon_situational")
+        local linked_switch=weapon_goal and weapon_goal.linked and get_linked("weapon") and weapon_goal.nv~=nv and weapon_goal.route~=route
+        -- Shared UTLF emitter: always stop the old route before choosing the new one.
+        if last_route.weapon~=route then stop_weapon();last_route.weapon=route end
+        if route=="utlf_ir" then if light_backends.requested("utlf_visible") then light_backends.set("utlf_visible",false) end
+        elseif light_backends.requested("utlf_ir") then light_backends.set("utlf_ir",false) end
+        -- AUTO keeps the upstream drain record but gates actual output (no recharge).
+        local requested=get_mode(route)~=0 and light_backends.can_emit(route)
+        light_backends.set(route,requested)
+        local core=light_compat.module("utlf_core");local s=core and core.get_state()
+        local b=light_compat.module("utlf_battery")
+        if s and s.light then
+            light_compat.link_stage("weapon:enabled-before")
+            s.light.enabled=wanted and not s.hud_item_light_suspended and not (b and b.is_flickering_off and b.is_flickering_off())
+            light_compat.link_stage("weapon:enabled-after")
+        end
+        local weapon_output=light_backends.emitting(route)
+        local request_changed=white_before~=light_backends.requested("utlf_visible") or ir_before~=light_backends.requested("utlf_ir")
+        local output_changed=old_weapon_output~=weapon_output or old_weapon_route~=route and weapon_output
+        local manual_mode=manual_weapon and get_mode(manual_id)
+        local manual_succeeded=manual_weapon and (manual_mode==0 and not light_backends.requested(get_route(manual_id)) or manual_mode~=0 and light_backends.requested(route) and (manual_mode~=1 or weapon_output))
+        -- A user command or a real linked NVG route change owns feedback.
+        -- Availability, AUTO aim, replacement and retry reconciliation stay silent.
+        if manual_succeeded and (request_changed or output_changed) or linked_switch and output_changed then
+            local sound_on=weapon_output
+            if manual_weapon and get_mode(manual_id)==0 then sound_on=false end
+            light_backends.feedback(sound_on and route or old_weapon_route,sound_on,manual_weapon==true)
+        end
+        weapon_goal={route=route,nv=nv,linked=get_linked("weapon")}
+        -- Laser Settings owns shader visibility; intent stays separate.
+        local laser_wanted=get_mode("laser")~=0 and light_backends.equipped("laser")
+        local laser_before=light_backends.requested("laser")
+        light_backends.set("laser",laser_wanted,false)
+        if (laser_goal~=laser_wanted or manual_id=="laser") and laser_before~=light_backends.requested("laser") then light_backends.feedback("laser",laser_wanted,manual_id=="laser") end
+        laser_goal=laser_wanted
+        light_compat.link_stage("reconcile:head-route")
+        local head_route=get_route("headlamp")
+        local white=get_mode("headlamp")==1 and light_backends.can_emit("headlamp")
+        local ir=get_mode("headlamp_ir")==1 and light_backends.can_emit("headlamp_ir")
+        if get_linked("head") then white=white and head_route=="headlamp";ir=ir and head_route=="headlamp_ir" end
+        local head_changed=light_backends.requested("headlamp")~=white or light_backends.requested("headlamp_ir")~=ir
+        local new_head_goal=not head_goal or head_goal.white~=white or head_goal.ir~=ir or head_goal.route~=head_route
+        local previous_target_changed=head_goal and (head_goal.white~=white or head_goal.ir~=ir)
+        local function apply_head()
+            -- OFF before ON prevents a transient white/IR overlap.
+            if not white then light_backends.set("headlamp",false) end
+            if not ir then light_backends.set("headlamp_ir",false) end
+            if white then light_backends.set("headlamp",true) end
+            if ir then light_backends.set("headlamp_ir",true) end
+            dirty=true
+        end
+        if new_head_goal and (head_changed or previous_target_changed or light_compat.animation_pending()) then
+            light_compat.link_stage("head:animation-before")
+            light_compat.play_headlamp_toggle_animation(head_route,white or ir,function() native(apply_head) end)
+            light_compat.link_stage("head:animation-after")
+        elseif head_changed and not light_compat.animation_pending() then
+            -- Retry a previously presented target without replaying presentation.
+            apply_head()
+        end
+        head_goal={white=white,ir=ir,route=head_route}
+        -- Fail dark immediately while the mandatory route animation presents IR.
+        if get_linked("head") and nv then light_backends.set("headlamp",false) end
+        last_route.head=get_route("headlamp")
+        dirty=false;light_compat.link_stage("reconcile:complete")
+        return true
+    end)
+end
+function set_mode(id,value,options)
+    id=owner(id)
+    if value~=0 and value~=1 and value~=2 or value==2 and not supports_auto(id) then return false end
+    if not modes[id] and id~="weapon_situational" and id~="headlamp_situational" then return false end
+    if not key(id,"mode") then return false end
+    local previous_mode=get_mode(id)
+    local previous_preference=read("emitter","preferred",0)
+    unified_light_store.edit(function()
+        seed()
+        write(id,"mode",value)
+        if value~=0 then
+            if id=="utlf_visible" or id=="utlf_ir" then write("emitter","preferred",id=="utlf_ir" and 1 or 0) end
+            write(id,"last_active",value)
+        end
+    end)
+    dirty=true
+    local manual_changed=previous_mode~=value or value~=0 and (id=="utlf_visible" or id=="utlf_ir") and previous_preference~=read("emitter","preferred",0)
+    reconcile(id,true,manual_changed and not (options and options.feedback==false))
+    return true
+end
+function manual_toggle(id)
+    if applying then return nil end
+    id=owner(id)
+    return set_mode(id,unified_light_logic.manual(get_mode(id),light_backends.emitting(get_route(id))))
+end
+function cycle_mode(id,direction) id=owner(id);return set_mode(id,unified_light_logic.cycle(get_mode(id),supports_auto(id),direction)) end
+function restore_toggle(id)
+    id=owner(id)
+    return set_mode(id,get_mode(id)==0 and (supports_auto(id) and read(id,"last_active",1) or 1) or 0)
+end
+function set_policy(id,value)
+    id=normalize(id)
+    if not supports_auto(id) then return false end
+    return unified_light_store.edit(function() write(id,"auto_policy",value);return set_mode(id,value==0 and 1 or 2,{feedback=false}) end)
+end
+function set_linked(pair,enabled)
+    if pair~="weapon" and pair~="head" then return false end
+    local linked_id=pair=="head" and "headlamp_situational" or "weapon_situational"
+    local white=pair=="head" and "headlamp" or "utlf_visible"
+    local ir=pair=="head" and "headlamp_ir" or "utlf_ir"
+    local was=get_linked(pair)
+    if was==(enabled==true) then return true end
+    light_compat.link_begin(pair,enabled==true)
+    light_compat.link_stage("capture:before")
+    unified_light_store.edit(function()
+        seed()
+        -- Capture independent modes BEFORE physical ownership changes; preserve them.
+        if read(white,"mode")==nil then write(white,"mode",independent(white)) end
+        if read(ir,"mode")==nil then write(ir,"mode",independent(ir)) end
+        if enabled and read(linked_id,"mode")==nil then write(linked_id,"mode",independent(light_backends.requested(ir) and ir or white)) end
+        light_compat.link_stage("capture:after",tostring(independent(white)).."/"..tostring(independent(ir)))
+        light_compat.link_stage("ownership:before")
+        unified_light_store.put(link_key(pair),enabled and 1 or 0)
+        light_compat.link_stage("ownership:after")
+    end)
+    -- Ownership changes do not invalidate an unchanged physical route. Forcing
+    -- it unknown used to detach/recreate a correct shared emitter while linking.
+    dirty=true;light_compat.link_stage("commit:complete")
+    local deferred=applying or not db or not db.actor
+    if deferred then light_compat.link_stage("reconcile:deferred") end
+    local ok=reconcile(nil,false);light_compat.link_finish(ok or deferred)
+    return ok or deferred -- Preserve accepted main-menu edits; dirty intent applies when an actor exists.
+end
+function battery_paused()
+    local route=last_route.weapon
+    if not route then return false end
+    if get_mode(route)~=2 then return false end
+    local z,a=zoom()
+    return not unified_light_logic.aim(policy(route),z,a,false)
+end
+function capabilities(id) local s=get_state(id);return {api_version=api_version,installed=s.installed,supports_auto=s.supports_auto,battery=s.battery~=nil,linked=s.linked} end
+local function changed(k,v) if not rawequal(last[k],v) then last[k]=v;return true end;return false end
+function update()
+    light_compat.tick()
+    if not db or not db.actor or not db.actor:alive() or device():is_paused() then return end
+    local w=light_backends.weapon();local z,a=weapon_zoom()
+    local core=light_compat.module("utlf_core");local s=core and core.get_state()
+    local c=changed("weapon",w and w:id())
+    c=changed("section",w and w:section()) or c
+    -- Reconcile availability transitions, not idle/fire state churn.
+    c=changed("handling",light_backends.weapon_emission_ready(w)) or c
+    c=changed("nvg",light_backends.nv()) or c;c=changed("zoom",z) or c;c=changed("alt",a) or c
+    c=changed("object",s and s.light) or c;c=changed("suspended",s and s.hud_item_light_suspended) or c
+    c=changed("generation",unified_light_store.generation) or c
+    local now=time_global()
+    if now>=next_probe then
+        next_probe=now+500
+        local _,_,attachment=light_backends.context()
+        c=changed("attachment",attachment) or c
+        for _,id in ipairs(ids) do c=changed(id.."power",light_backends.can_emit(id)) or c;c=changed(id.."installed",light_backends.installed(id)) or c end
+    end
+    if c or dirty then reconcile(nil,false) end
+    bling_player_lights.normal_update()
+    if now>=next_discovery then
+        next_discovery=now+1000
+        local laser=light_compat.module("bling_laser_policy");if laser then laser.install() end
+        bling_light_profiles.install_ir()
+        local mcm=light_compat.module("unified_lights_mcm");if mcm then mcm.register_integrations() end
+    end
+end
+function on_game_start()
+    RegisterScriptCallback("actor_on_update",update)
+    RegisterScriptCallback("actor_on_first_update",invalidate)
+    RegisterScriptCallback("on_option_change",function() unified_light_store.invalidate();bling_light_profiles.invalidate();invalidate() end)
+    RegisterScriptCallback("load_state",function() unified_light_store.invalidate();bling_light_profiles.invalidate();invalidate() end)
+    RegisterScriptCallback("on_game_load",function() unified_light_store.invalidate();bling_light_profiles.invalidate();invalidate() end)
+end

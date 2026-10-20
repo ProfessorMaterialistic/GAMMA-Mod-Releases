@@ -1,0 +1,234 @@
+local GUI = nil
+local DEFAULT_BRIGHTNESS = 0.55
+local DEFAULT_RANGE = 30
+local DEFAULT_BEAM_SIZE = 50
+
+class "AdjustableFlashlightDialog" (CUIScriptWnd)
+
+function AdjustableFlashlightDialog:__init() super()
+    self:InitControls()
+    self:InitCallbacks()
+    self.lbl_enabled:Show(false);self.chk_enabled:Show(false)
+    bling_light_control.init(self,self.back,"headlamp",134)
+end
+
+function AdjustableFlashlightDialog:__finalize()
+    GUI = nil
+end
+
+local function bool_text(value)
+    return game.translate_string(value and "ui_flashlight_status_on" or "ui_flashlight_status_off")
+end
+
+local function get_mcm(path,default)
+    return unified_light_store.get(path,default,type(default)=="boolean" and 1 or 2)
+end
+local function set_mcm(path,value) unified_light_store.put(path,value);return true end
+local function different(a, b, tolerance)
+    return math.abs((tonumber(a) or 0) - (tonumber(b) or 0)) > (tolerance or 0.0001)
+end
+
+
+function AdjustableFlashlightDialog:InitControls()
+    self:SetWndRect(Frect():set(0, 0, 1024, 768))
+    self:SetAutoDelete(true)
+
+    local xml = CScriptXmlInit()
+    xml:ParseFile("ui_adjustable_flashlight.xml")
+    self.back = xml:InitStatic("background", self)
+
+    local caption = xml:InitStatic("caption", self.back)
+    caption:TextControl():SetText(game.translate_string("ui_flashlight_panel_title"))
+    local subtitle = xml:InitStatic("subtitle", self.back)
+    subtitle:TextControl():SetText(game.translate_string("ui_flashlight_panel_subtitle"))
+
+    self.lbl_torch = xml:InitTextWnd("status_torch", self.back)
+
+    local lbl_enabled = xml:InitStatic("lbl_enabled", self.back)
+    self.lbl_enabled=lbl_enabled
+    lbl_enabled:TextControl():SetText(game.translate_string("ui_flashlight_enabled"))
+    self.chk_enabled = xml:InitCheck("chk_enabled", self.back)
+
+    local lbl_brightness = xml:InitStatic("lbl_brightness", self.back)
+    lbl_brightness:TextControl():SetText(game.translate_string("ui_flashlight_brightness"))
+    self.track_brightness = xml:InitTrackBar("track_brightness", self.back)
+    self.track_brightness:SetOptFBounds(0.10, 1.20)
+    self.track_brightness:SetStep(0.05)
+    self.value_brightness = xml:InitTextWnd("value_brightness", self.back)
+
+    local lbl_range = xml:InitStatic("lbl_range", self.back)
+    lbl_range:TextControl():SetText(game.translate_string("ui_flashlight_range"))
+    self.track_range = xml:InitTrackBar("track_range", self.back)
+    self.track_range:SetOptFBounds(5, 100)
+    self.track_range:SetStep(1)
+    self.value_range = xml:InitTextWnd("value_range", self.back)
+
+    local lbl_beam = xml:InitStatic("lbl_beam_size", self.back)
+    lbl_beam:TextControl():SetText(game.translate_string("ui_flashlight_beam_size"))
+    self.track_beam = xml:InitTrackBar("track_beam_size", self.back)
+    self.track_beam:SetOptFBounds(10, 120)
+    self.track_beam:SetStep(1)
+    self.value_beam = xml:InitTextWnd("value_beam_size", self.back)
+
+    xml:InitStatic("lbl_color", self.back):TextControl():SetText("Light Color")
+    bling_player_lights.init_color_buttons(self, xml, self.back, "headlamp")
+
+    local notice = xml:InitStatic("notice", self.back)
+    notice:TextControl():SetText(game.translate_string("ui_flashlight_notice"))
+
+    self.btn_reset = xml:Init3tButton("btn_reset", self.back)
+    self.btn_reset:TextControl():SetText(game.translate_string("ui_flashlight_reset"))
+    self:Register(self.btn_reset, "btn_reset")
+
+    self.btn_close = xml:Init3tButton("btn_close", self.back)
+    self.btn_close:TextControl():SetText(game.translate_string("ui_flashlight_close"))
+    self:Register(self.btn_close, "btn_close")
+end
+
+function AdjustableFlashlightDialog:InitCallbacks()
+    self:AddCallback("btn_close", ui_events.BUTTON_CLICKED, self.Close, self)
+    self:AddCallback("btn_reset", ui_events.BUTTON_CLICKED, self.Reset, self)
+end
+
+function AdjustableFlashlightDialog:LoadSettingsIntoControls()
+    local brightness = tonumber(
+        get_mcm(
+            "adjustable_flashlight/brightness",
+            DEFAULT_BRIGHTNESS
+        )
+    ) or DEFAULT_BRIGHTNESS
+
+    local range = tonumber(
+        get_mcm(
+            "adjustable_flashlight/range",
+            DEFAULT_RANGE
+        )
+    ) or DEFAULT_RANGE
+
+    local beam = tonumber(
+        get_mcm(
+            "adjustable_flashlight/beam_size",
+            DEFAULT_BEAM_SIZE
+        )
+    ) or DEFAULT_BEAM_SIZE
+
+    self.track_brightness:SetFValue(brightness)
+    self.track_range:SetFValue(range)
+    self.track_beam:SetFValue(beam)
+end
+
+function AdjustableFlashlightDialog:Color()
+    bling_player_lights.next_preset("headlamp", "player")
+    self:Refresh()
+end
+
+function AdjustableFlashlightDialog:Refresh()
+    bling_player_lights.refresh_color_buttons(self, "headlamp", "player")
+    local status = adjustable_flashlight.get_status()
+    bling_light_control.refresh(self,"headlamp")
+    local linked=bling_situational and bling_situational.linked("head")
+    self.lbl_enabled:TextControl():SetText(linked and "Enable linked headlamp (white / IR)" or game.translate_string("ui_flashlight_enabled"))
+    self.last_enabled=unified_lights.get_mode("headlamp")~=0
+    self.chk_enabled:SetCheck(self.last_enabled)
+    local adjustable=adjustable_flashlight.oklc_backend_name=="Soy Adjustable Headlamps"
+    self.track_brightness:Enable(adjustable);self.track_range:Enable(adjustable);self.track_beam:Enable(adjustable)
+    self.chk_enabled:SetCheck(self.last_enabled)
+    self.lbl_torch:SetText(game.translate_string("ui_flashlight_status_torch") .. ": " .. bool_text(status.torch))
+    self.value_brightness:SetText(
+        string.format("%.2f", self.track_brightness:GetFValue())
+    )
+    self.value_range:SetText(
+        string.format(
+            "%d m",
+            math.floor(self.track_range:GetFValue() + 0.5)
+        )
+    )
+    self.value_beam:SetText(
+        string.format(
+            "%d deg",
+            math.floor(self.track_beam:GetFValue() + 0.5)
+        )
+    )
+end
+
+function AdjustableFlashlightDialog:ShowPanel()
+    self:LoadSettingsIntoControls()
+    self:Refresh()
+    self:ShowDialog(true)
+    Register_UI("AdjustableFlashlightDialog", "adjustable_flashlight_ui")
+end
+
+function AdjustableFlashlightDialog:_Update()
+    CUIScriptWnd.Update(self)
+    if not self:IsShown() then return end
+
+    local status = adjustable_flashlight.get_status()
+    local requested = self.chk_enabled:GetCheck()
+    if requested ~= self.last_enabled then
+        if bling_situational and bling_situational.linked("head") then bling_situational.select("head",requested and 1 or 0)
+        else unified_lights.set_mode("headlamp",requested and 1 or 0) end
+    end
+
+    local brightness = self.track_brightness:GetFValue()
+    local range = math.floor(self.track_range:GetFValue() + 0.5)
+    local beam = math.floor(self.track_beam:GetFValue() + 0.5)
+
+    if different(brightness, get_mcm("adjustable_flashlight/brightness", DEFAULT_BRIGHTNESS), 0.001) then
+        set_mcm("adjustable_flashlight/brightness", brightness)
+    end
+    if different(range, get_mcm("adjustable_flashlight/range", DEFAULT_RANGE)) then
+        set_mcm("adjustable_flashlight/range", range)
+    end
+    if different(beam, get_mcm("adjustable_flashlight/beam_size", DEFAULT_BEAM_SIZE)) then
+        set_mcm("adjustable_flashlight/beam_size", beam)
+    end
+
+    self:Refresh()
+end
+
+function AdjustableFlashlightDialog:_Reset()
+    bling_player_lights.set_preset("headlamp", "player", 1)
+    set_mcm(
+        "adjustable_flashlight/brightness",
+        DEFAULT_BRIGHTNESS
+    )
+    set_mcm(
+        "adjustable_flashlight/range",
+        DEFAULT_RANGE
+    )
+    set_mcm(
+        "adjustable_flashlight/beam_size",
+        DEFAULT_BEAM_SIZE
+    )
+
+    self.track_brightness:SetFValue(DEFAULT_BRIGHTNESS)
+    self.track_range:SetFValue(DEFAULT_RANGE)
+    self.track_beam:SetFValue(DEFAULT_BEAM_SIZE)
+
+    if bling_situational and bling_situational.linked("head") then bling_situational.select("head",0)
+    else unified_lights.set_mode("headlamp",0) end
+    self:Refresh()
+end
+
+function AdjustableFlashlightDialog:OnKeyboard(dik, keyboard_action)
+    local res = CUIScriptWnd.OnKeyboard(self, dik, keyboard_action)
+    if res == false and keyboard_action == ui_events.WINDOW_KEY_PRESSED and dik == DIK_keys.DIK_ESCAPE then
+        self:Close()
+    end
+    return res
+end
+
+function AdjustableFlashlightDialog:Close()
+    if self:IsShown() then self:HideDialog() end
+    Unregister_UI("AdjustableFlashlightDialog")
+end
+
+function open_dialog()
+    if GUI and GUI:IsShown() then GUI:Close() return end
+    if not GUI then GUI = AdjustableFlashlightDialog() end
+    GUI:ShowPanel()
+end
+
+function AdjustableFlashlightDialog:Update() return unified_light_store.edit(function() return self:_Update() end) end
+
+function AdjustableFlashlightDialog:Reset() return unified_light_store.edit(function() return self:_Reset() end) end

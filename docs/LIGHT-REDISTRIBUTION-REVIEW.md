@@ -26,3 +26,13 @@ the existing derivative grant. No new third-party component/artwork is introduce
 Preferred source/generators/necessary inputs are under source/light-2.1.1 and
 reproduce all final runtime/assets. Stable labels/docs differ from accepted RC;
 gameplay behavior does not. Included original license texts/credits remain.
+
+
+## October 19 Light 2.1.2
+
+No new third-party source or artwork. The maintained Light backend adds the two
+named aim-transition states; all other gameplay bytes remain those of 2.1.1.
+The matched RC was owner accepted. Stable promotion changes documentation and
+display labels only. Existing component permissions, notices and original
+license texts are retained. Portable preferred source under source/light-2.1.2
+reproduces all 85 final runtime/assets; historical source remains intact.

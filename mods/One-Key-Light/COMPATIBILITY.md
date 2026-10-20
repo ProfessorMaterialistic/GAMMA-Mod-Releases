@@ -1,6 +1,12 @@
-# Compatibility and dependencies — 2.1.1
+# Compatibility and dependencies — 2.1.2
 
 ## Current acceptance and supported scope
+
+The owner accepted the matched 2.1.2 RC pair in the existing GAMMA setup.
+The ADS correction covers equipped weapons using aim-start/end states;
+genuine suspension and absent attachments still suppress output.
+No specific headlamp reactivation fix is claimed. See RELEASE-NOTES.md.
+
 
 Official UTLF v1.0.2 (`d8c89c385ece3fbfd10e50c054b4618bc3f09d38`)
 is the supported tactical-light integration. Its new HUD and light-pose modules
@@ -8,7 +14,7 @@ remain owned by the framework; obsolete replacement machinery is not bundled.
 The owner confirmed the exact RC pair working in the current GAMMA setup. No
 new engine build is supplied or universal host/weapon certification asserted.
 
-33 focused local groups cover controls, routing, policies, family persistence,
+43 focused local groups cover controls, routing, policies, family persistence,
 firing, battery pause and mocked recovery. Real clone attachment/battery transfer,
 all magnifier variants and rendered beam continuity remain accepted limitations.
 Install selected dependencies separately. Core controls work without optional
@@ -43,7 +49,7 @@ base Anomaly and other modpacks are unverified. No universal minimum API is asse
 | Borksy Laser Settings 2.7, BaS-compatible laser support and laser-capable weapon | OPTIONAL INTEGRATION for laser controls |
 | MGI/MGUI 0.3.4 | OPTIONAL INTEGRATION for GUI launchers; core works without it |
 | Native/G2X presets | OPTIONAL INTEGRATION; assets installed separately |
-| Matching companion 2.1.1 | OPTIONAL INTEGRATION; no third mandatory core |
+| Matching companion 2.1.2 | OPTIONAL INTEGRATION; no third mandatory core |
 | Python, Lupa Lua 5.1, Pillow, 7-Zip | DEVELOPMENT ONLY; never runtime requirements |
 
 Laser Settings lists BaS as a prerequisite; use GAMMA’s installed compatible

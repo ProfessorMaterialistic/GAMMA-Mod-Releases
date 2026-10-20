@@ -1,0 +1,120 @@
+-- One Key standalone OFF/ON intent. No AUTO, aim policy or linked router.
+local records={}
+local families={}
+local next_probe,last_weapon,last_section,last_attachment=0,nil,nil,nil
+local head_goal
+local function scope(id)
+    if id=="headlamp" or id=="headlamp_ir" then return "player" end
+    local w=light_backends.weapon();if not w then return end
+    local section=w:section()
+    if not families[section] then
+        local current,seen=section,{}
+        for i=1,32 do
+            if seen[current] then current=section;break end
+            seen[current]=true
+            local parent=ini_sys:r_string_ex(current,"parent_section")
+            if not parent or parent=="" or parent:sub(1,4)~="wpn_" then break end
+            current=parent
+        end
+        families[section]=current
+    end
+    return families[section]
+end
+local function record(id)
+    local f=scope(id);if not f then return end
+    local key="one_key_lights/standalone/"..f.."/"..id
+    if not records[key] then
+        local value=axr_main.config:r_value("mcm",key,2)
+        local requested=light_backends.requested(id=="preferred" and "utlf_ir" or id)
+        records[key]={key=key,intent=value==0 and 0 or value==1 and 1 or requested and 1 or 0}
+    end
+    return records[key]
+end
+function mode(id) local r=record(id);return r and r.intent or 0 end
+local function head_transition(id)
+    local white=mode("headlamp")==1 and light_backends.can_emit("headlamp")
+    local ir=mode("headlamp_ir")==1 and light_backends.can_emit("headlamp_ir")
+    local changed=not head_goal or head_goal.white~=white or head_goal.ir~=ir
+    local physical_changed=light_backends.requested("headlamp")~=white or light_backends.requested("headlamp_ir")~=ir
+    local function apply()
+        if not white then light_backends.set("headlamp",false) end
+        if not ir then light_backends.set("headlamp_ir",false) end
+        if white then light_backends.set("headlamp",true) end
+        if ir then light_backends.set("headlamp_ir",true) end
+    end
+    if changed and (physical_changed or head_goal~=nil or light_compat.animation_pending()) then
+        light_compat.play_headlamp_toggle_animation(id,white or ir,apply)
+    elseif physical_changed and not light_compat.animation_pending() then apply() end
+    head_goal={white=white,ir=ir}
+    return true
+end
+function select(id,value)
+    if value~=0 and value~=1 then return false end
+    local r=record(id);if not r then return false end
+    local changed=false
+    if r.intent~=value then r.intent=value;axr_main.config:w_value("mcm",r.key,value);changed=true end
+    local old_route=light_backends.requested("utlf_ir") and "utlf_ir" or "utlf_visible"
+    local paired=id=="utlf_ir" or id=="utlf_visible"
+    local requested_before=light_backends.requested(id)
+    local was=light_backends.emitting(id)
+    if paired then was=light_backends.emitting(old_route) elseif id=="laser" then was=light_backends.requested(id) end
+    if value==1 and (id=="utlf_visible" or id=="utlf_ir") then
+        local other=id=="utlf_ir" and "utlf_visible" or "utlf_ir"
+        if light_backends.requested(other) then light_backends.set(other,false) end
+        -- Shared physical preference only; independent saved OFF/ON values remain intact.
+        local preference=record("preferred")
+        local channel=id=="utlf_ir" and 1 or 0
+        if preference and preference.intent~=channel then
+            preference.intent=channel;axr_main.config:w_value("mcm",preference.key,channel);changed=true
+        end
+    end
+    if changed then axr_main.config:save() end
+    if id=="headlamp" or id=="headlamp_ir" then return head_transition(id) end
+    if value==1 or light_backends.requested(id) then light_backends.set(id,value==1,false) end
+    local actual_route=id
+    if paired then actual_route=light_backends.requested("utlf_ir") and "utlf_ir" or "utlf_visible" end
+    local output=light_backends.emitting(actual_route);if id=="laser" then output=light_backends.requested(id) end
+    local requested_after=light_backends.requested(id)
+    local succeeded=not paired or value==0 and not requested_after or value==1 and requested_after and output and actual_route==id
+    if succeeded and (not paired or changed) and (was~=output or output and paired and old_route~=actual_route or paired and requested_before~=requested_after) then
+        local sound_on=output;if paired then sound_on=value==1 end
+        light_backends.feedback(sound_on and actual_route or paired and old_route or id,sound_on,true)
+    end
+    return true
+end
+function toggle(id) return select(id,mode(id)==1 and 0 or 1) end
+function update()
+    if light_compat.controller() then return end
+    local w=light_backends.weapon();local wid=w and w:id()
+    if wid==last_weapon and time_global()<next_probe then return end
+    next_probe=time_global()+500
+    local section=w and w:section()
+    local _,_,attachment=light_backends.context()
+    local switched=wid~=last_weapon or section~=last_section or attachment~=last_attachment
+    last_weapon=wid;last_section=section;last_attachment=attachment
+    local core=light_compat.module("utlf_core")
+    local preference=record("preferred")
+    for _,id in ipairs({"headlamp","headlamp_ir","laser","utlf_visible","utlf_ir"}) do
+        if light_backends.installed(id) then
+            local r=record(id);local power=light_backends.can_emit(id)
+            local selected=id~="utlf_ir" and id~="utlf_visible" or not preference or (preference.intent==1 and id=="utlf_ir" or preference.intent==0 and id=="utlf_visible")
+            local emitter=selected and (id=="utlf_visible" or id=="utlf_ir")
+            local state=emitter and core and core.get_state()
+            local object=state and state.light
+            local requested=light_backends.requested(id)
+            if r and (r.power~=power or switched or r.requested~=requested or not rawequal(r.light,object)) then
+                if id=="headlamp" or id=="headlamp_ir" then head_transition(id)
+                else
+                    local desired=r.intent==1 and power and selected
+                    if desired or light_backends.requested(id) then light_backends.set(id,desired,false) end
+                end
+            end
+            if r then
+                r.power=power;r.requested=light_backends.requested(id)
+                state=emitter and core and core.get_state();r.light=state and state.light
+            end
+        end
+    end
+end
+function reset() records={};families={};next_probe=0;last_weapon=nil;last_section=nil;last_attachment=nil;head_goal=nil end
+function on_game_start() RegisterScriptCallback("load_state",reset);RegisterScriptCallback("on_game_load",reset) end
