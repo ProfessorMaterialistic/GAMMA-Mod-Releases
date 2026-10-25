@@ -1,0 +1,153 @@
+-- Aim visibility gates the existing player emitter, never the requested on/off state.
+function policy(mode,id)
+    local value=id and bling_light_profiles.get(mode,id,"aim_policy",0) or 0
+    return bling_light_control.automatic_policy(mode,value)
+end
+function allowed(value,zoomed,alternate)
+    return value==0 or (zoomed and (value==1 or (value==2 and alternate)))
+end
+function permits(mode,id,weapon)
+    local value=bling_light_control.gate(mode,policy(mode,id))
+    if value==0 then return true end
+    local w=weapon and weapon:cast_Weapon()
+    return w and allowed(value,w:IsZoomed(),w:GetZoomType()==1) or false
+end
+function current_mode()
+    local ir=utlf_ir_mode
+    local requested=ir and (ir.bling_ir_requested or ir.oklc_requested)
+    return ir and ((requested and requested()) or (ir.is_ir_active and ir.is_ir_active())) and "ir" or "weapon"
+end
+function battery_paused()
+    if not db.actor or not utlf_core then return false end
+    local s=utlf_core.get_state()
+    if not s or not s.light or not s.desired_on then return false end
+    local w,p=utlf_core.active_supported_weapon()
+    if not w or not p or s.weapon_id~=w:id() then return false end
+    local id=w:section()
+    if utlf_core.is_modular_profile(p) then
+        local saved=utlf_core.saved_modular_light(w)
+        if not saved or not saved.section then return false end
+        id=saved.section
+    end
+    return not permits(current_mode(),id,w)
+end
+function update()
+    if not db.actor or not utlf_core then return end
+    local s=utlf_core.get_state()
+    if not s or not s.light or not s.desired_on then return end
+    local w,p=utlf_core.active_supported_weapon()
+    if not w or not p or s.weapon_id~=w:id() then return end
+    local id=w:section()
+    if utlf_core.is_modular_profile(p) then
+        local saved=utlf_core.saved_modular_light(w)
+        if not saved or not saved.section then return end
+        id=saved.section
+    end
+    -- Only an existing, requested emitter is gated. NVGs/batteries remain upstream.
+    local flicker=utlf_battery and utlf_battery.is_flickering_off and utlf_battery.is_flickering_off()
+    s.light.enabled=permits(current_mode(),id,w) and not s.hud_item_light_suspended and not flicker
+end
+local installed=false
+local last_nv=nil
+local last_weapon=nil
+local last_sync=nil
+function sync_enabled()
+    if bling_situational then return bling_situational.linked("weapon") end
+    return axr_main.config:r_value("mcm","bling_light_profiles/auto_nv",2)==1
+end
+function sync_available()
+    local ir=utlf_ir_mode
+    return ir and (ir.bling_ir_requested or ir.oklc_requested) and (ir.bling_ir_toggle or ir.oklc_toggle)
+end
+function sync_update()
+    if bling_situational then bling_situational.update();return end
+    if not db.actor or not utlf_core then return end
+    local enabled=sync_enabled()
+    if not enabled or not sync_available() then last_nv=nil;last_weapon=nil;last_sync=nil;return end
+    local nv=item_device and item_device.nv_state==true or false
+    local w,p=utlf_core.active_supported_weapon()
+    if not w or not p or w:get_state()~=0 then return end
+    local id=w:id()
+    if last_nv==nv and last_weapon==id and last_sync==enabled then return end
+    -- One attempt per NVG/weapon transition; manual off remains respected afterward.
+    last_nv=nv;last_weapon=id;last_sync=enabled
+    local ir=utlf_ir_mode
+    local requested=ir.bling_ir_requested or ir.oklc_requested
+    local toggle=ir.bling_ir_toggle or ir.oklc_toggle
+    if nv then
+        if not bling_light_control.sync_blocked("ir") and not requested() then bling_light_control.native(toggle) end
+    else
+        if requested() then bling_light_control.native(toggle) end
+        if not bling_light_control.sync_blocked("weapon") then bling_player_lights.set_weapon_enabled(true) end
+    end
+end
+function toggle_sync()
+    if bling_situational then bling_situational.set_link("weapon",not sync_enabled());return end
+    axr_main.config:w_value("mcm","bling_light_profiles/auto_nv",sync_enabled() and 0 or 1)
+    axr_main.config:save()
+    -- Sync selects the live emitter only; it never rewrites WL/IR saved modes.
+    last_sync=nil;sync_update();update()
+end
+function install()
+    if installed or not utlf_lights or not utlf_lights.attach_light then return end
+    local attach=utlf_lights.attach_light
+    utlf_lights.attach_light=function(...)
+        local result=attach(...);update();return result
+    end
+    installed=true
+end
+function on_game_start()
+    RegisterScriptCallback("actor_on_first_update",install)
+    RegisterScriptCallback("actor_on_update",function() sync_update();update() end)
+end
+
+function snapshot(mode,c)
+    if mode=="ir" then
+        local s=c.settings
+        return {brightness=s.brightness,range=s.range,cone_deg=s.cone_deg,aim_policy=policy(mode,c.light_section)}
+    end
+    local r,g,b=bling_player_lights.rgb("weapon",c.id)
+    return {brightness=c.brightness,range=c.range,cone=c.cone,r=r,g=g,b=b,aim_policy=policy(mode,c.id)}
+end
+function context(dialog,mode)
+    local c=mode=="ir" and utlf_ir_mode.get_active_ir_context() or bling_player_lights.context(1)
+    local id=c and (mode=="ir" and c.light_section or c.id)
+    local old=dialog.context and (mode=="ir" and dialog.context.light_section or dialog.context.id)
+    if not id or id~=old then return nil,nil end
+    return c,id
+end
+function refresh(dialog,mode)
+    local c,id=context(dialog,mode)
+    local value=policy(mode,id)
+    bling_light_control.refresh(dialog,mode,value)
+    if bling_light_control.state(mode,value)~=2 then value=0 end
+    dialog.aim_ads:SetCheck(value==1);dialog.aim_alt:SetCheck(value==2)
+    dialog.aim_ads:Enable(c~=nil);dialog.aim_alt:Enable(c~=nil)
+    dialog.aim_sync:SetCheck(sync_enabled());dialog.aim_sync:Enable(sync_available()~=nil and sync_available()~=false)
+end
+function choose(dialog,mode,value)
+    local c,id=context(dialog,mode)
+    if c then
+        -- Clicking the active choice clears both (normal behavior).
+        local current=bling_light_control.state(mode,policy(mode,id))==2 and policy(mode,id) or 0
+        local next_value=current==value and 0 or value
+        bling_light_control.set_policy(mode,next_value)
+        update()
+    end
+    refresh(dialog,mode)
+end
+function init(dialog,xml,parent,mode)
+    bling_light_control.init(dialog,parent,mode,mode=="ir" and 388 or 134,function()
+        local c,id=context(dialog,mode);return policy(mode,id)
+    end)
+    dialog.aim_ads=xml:InitCheck("aim_ads",parent)
+    dialog.aim_alt=xml:InitCheck("aim_alt",parent)
+    dialog.aim_sync=xml:InitCheck("aim_sync",parent)
+    xml:InitTextWnd("aim_sync_label",parent)
+    dialog:Register(dialog.aim_sync,"aim_sync")
+    dialog:AddCallback("aim_sync",ui_events.BUTTON_CLICKED,function() toggle_sync();refresh(dialog,mode) end,dialog)
+    xml:InitTextWnd("aim_ads_label",parent);xml:InitTextWnd("aim_alt_label",parent)
+    dialog:Register(dialog.aim_ads,"aim_ads");dialog:Register(dialog.aim_alt,"aim_alt")
+    dialog:AddCallback("aim_ads",ui_events.BUTTON_CLICKED,function() choose(dialog,mode,1) end,dialog)
+    dialog:AddCallback("aim_alt",ui_events.BUTTON_CLICKED,function() choose(dialog,mode,2) end,dialog)
+end

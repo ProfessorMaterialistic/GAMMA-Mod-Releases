@@ -1,0 +1,178 @@
+-- Canonical optional compatibility bridge. Identical in both independent packages.
+debug_enabled=false
+settings_generation=0
+local catalog, warnings, pending, active
+local serial,next_animation,physical_depth=0,0,0
+function module(name)
+    if not catalog then
+        catalog={}
+        if getFS then
+            local list=getFS():file_list_open_ex("$game_scripts$",bit_or(FS.FS_ListFiles,FS.FS_RootOnly),"*.script")
+            for i=0,list:Size()-1 do catalog[list:GetAt(i):NameShort()]=true end
+        end
+    end
+    -- Presence is cached; loaded module availability is deliberately NOT cached.
+    if not getFS or catalog[name..".script"] then return _G[name] end
+end
+function warn(id,err)
+    warnings=warnings or {}
+    if warnings[id] then return end
+    warnings[id]=true
+    if debug_enabled and printf then printf("[Light Rebuild] %s: %s",id,tostring(err)) end
+end
+function trace(...) if debug_enabled and printf then printf(...) end end
+function owns_key(key)
+    local input=module("one_key_lights_input")
+    return input and input.owns_key(key)==true or false
+end
+function controller() return module("unified_lights") end
+function manual(id)
+    local api=controller()
+    if api and not api.is_applying() then return api.manual_toggle(id) end
+    if not api then
+        local direct=module("one_key_lights_standalone")
+        if direct then return direct.toggle(id) end
+    end
+end
+function select(id,value)
+    if physical_depth>0 then return nil end
+    local api=controller()
+    if api and not api.is_applying() then return api.set_mode(id,value and 1 or 0) end
+    if not api then local direct=module("one_key_lights_standalone");if direct then return direct.select(id,value and 1 or 0) end end
+end
+function physical(fn)
+    physical_depth=physical_depth+1
+    local ok,result=pcall(fn);physical_depth=physical_depth-1
+    if not ok then error(result) end
+    return result
+end
+function animation_equipped()
+    return pending~=nil
+end
+function animation_switch(force)
+    if pending and (force or pending.started) then
+        local job=pending
+        pending=nil
+        local ok,err=pcall(job.apply)
+        if not ok then warn("animation",err) end
+        local b=module("light_backends")
+        if ok and b then
+            local white,ir=b.requested("headlamp"),b.requested("headlamp_ir")
+            if white~=job.white or ir~=job.ir then
+                local target=ir and not job.ir and "headlamp_ir" or white and not job.white and "headlamp" or job.ir and not ir and "headlamp_ir" or "headlamp"
+                local enabled=white;if target=="headlamp_ir" then enabled=ir end
+                b.feedback(target,enabled)
+            end
+        end
+        return true
+    end
+    -- Late/interrupted callbacks cannot toggle the authoritative final state.
+    return false
+end
+function animation_token() return active end
+function animation_current(token) return token~=nil and token==active end
+function animation_complete(token)
+    if token==active then active=nil;next_animation=time_global()+100 end
+end
+local function start_animation()
+    if not pending or active or time_global()<next_animation then return end
+    serial=serial+1;active=serial;pending.started=true
+    local effect=actor_effects and (actor_effects.oklc_animated_headlamp or actor_effects.Hit_TorchToggle)
+    local ok,result=false,false
+    if effect then ok,result=pcall(effect) end
+    if not ok or result~=true then animation_switch(true);active=nil end
+end
+function play_headlamp_toggle_animation(target,desired,apply)
+    -- One motion owns presentation. Retargeting never extends the first deadline.
+    if not pending then
+        local b=module("light_backends")
+        pending={deadline=time_global()+3000,white=b and b.requested("headlamp") or false,ir=b and b.requested("headlamp_ir") or false}
+    end
+    pending.target=target;pending.desired=desired;pending.apply=apply
+    start_animation()
+    return true
+end
+function animation_pending() return pending~=nil end
+function tick()
+    if pending and time_global()>=pending.deadline then
+        animation_switch(true)
+        local effect=module("actor_effects");if effect and effect.oklc_cancel_headlamp_animation then effect.oklc_cancel_headlamp_animation() end
+        active=nil;serial=serial+1;next_animation=time_global()+100
+    else start_animation() end
+end
+function reset()
+    local effect=module("actor_effects")
+    if active and effect and effect.oklc_cancel_headlamp_animation then effect.oklc_cancel_headlamp_animation() end
+    pending=nil;active=nil;serial=serial+1;next_animation=0;warnings={};settings_generation=settings_generation+1
+end
+function on_game_start()
+    RegisterScriptCallback("on_game_load",reset)
+    RegisterScriptCallback("load_state",reset)
+    RegisterScriptCallback("on_option_change",function() settings_generation=settings_generation+1 end)
+end
+
+-- Temporary diagnostic candidate: bounded markers only during a link edit.
+-- Never format, compare or retain native light/control userdata in diagnostics.
+local link_serial,link_job=0,nil
+function link_begin(pair,enabled)
+    link_serial=link_serial+1;link_job={serial=link_serial,pair=pair}
+    link_stage(enabled and "begin:linked" or "begin:separate")
+end
+function link_stage(stage,detail)
+    if link_job and printf then printf("[Light Rebuild][link %s %s] %s %s",tostring(link_job.serial),link_job.pair,stage,detail or "") end
+end
+function link_active() return link_job~=nil end
+function link_finish(ok)
+    link_stage(ok and "complete" or "failed");link_job=nil
+end
+
+-- Native MCM owns navigation, skin, scrolling and option controls.
+-- Like CMC's own deferred Apply/search refresh, rebuild only after click dispatch.
+function refresh_mcm(ui)
+    if ui then ui._light_refresh_path=ui.last_path end
+end
+function link_command(pair,enabled,ui)
+    local controller=module("unified_lights")
+    if not controller then return false end
+    if printf then printf("[Light Rebuild][MCM] link command %s %s",pair,tostring(enabled==true)) end
+    local ok=controller.set_linked(pair,enabled)
+    if printf then printf("[Light Rebuild][MCM] link returned %s %s",pair,tostring(ok==true)) end
+    if ok then refresh_mcm(ui) end
+    return ok
+end
+function mcm_link_option(pair)
+    -- Native MCM owns pending edits/Apply/Reset/Cancel. No parallel saved link key.
+    return {id="link_"..pair,type="list",val=2,def=0,no_str=true,
+        caption=pair=="weapon" and "Weapon Lights" or "Headlamps",
+        content={{0,"Separate"},{1,"NVG Linked"}},
+        curr={function() local api=controller();return api and api.get_linked(pair) and 1 or 0 end},
+        functor={function(value) return link_command(pair,value==1) end}}
+end
+function mcm_integrations()
+    local rows={}
+    for _,entry in ipairs({{"unified_lights","Unified Player Light Controls"},{"utlf_core","UTLF"},
+        {"utlf_ir_mode","UTLF IR"},{"adjustable_flashlight","Normal Headlamp"},
+        {"ir_headlamp","IR Headlamp"},{"zzz_bas_laser_control","Laser integration"},{"mgi","MGI/MGUI"}}) do
+        local available=module(entry[1]) or entry[1]=="mgi" and module("MGI")
+        rows[#rows+1]={id=entry[1],type="desc",text=entry[2]..": "..(available and "Detected" or "Not installed")}
+    end
+    return rows
+end
+function install_mcm_layout()
+    local mcm=module("ui_mcm");local class=mcm and mcm.UI_MCM
+    if not class or class._light_refresh_wrapped or not class.Update then return end
+    -- Preserve the skin's complete geometry and native tree routing. Only defer
+    -- explicit Torch status refresh until its button callback has returned.
+    local update=class.Update
+    class.Update=function(ui,...)
+        local result=update(ui,...)
+        local path=ui._light_refresh_path;ui._light_refresh_path=nil
+        if path and path==ui.last_path and ui:IsShown() then
+            if printf then printf("[Light Rebuild][MCM] deferred refresh %s",path) end
+            ui:Reset_last_opt()
+            if printf then printf("[Light Rebuild][MCM] refresh complete %s",path) end
+        end
+        return result
+    end
+    class._light_refresh_wrapped=true
+end

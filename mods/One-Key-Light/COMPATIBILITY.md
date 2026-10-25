@@ -1,7 +1,7 @@
-# Compatibility and dependencies — 2.2.1
+# Compatibility and dependencies — 2.2.2
 
-Owner-confirmed on the matched 2.2.1-rc.1 pair in the existing GAMMA setup. The accepted
-selection uses Soy Adjustable Headlamps 1.0, Laser Settings 2.7, UTLF 1.0.2 plus
+The earlier 2.2.1-rc.1 pair was owner-tested in GAMMA. The 2.2.2 sprint fix
+has automated validation; its gameplay retest is pending. That prior setup uses Soy Adjustable Headlamps 1.0, Laser Settings 2.7, UTLF 1.0.2 plus
 Soy UTLF IR 1.03, and Soy IR Headlamps 1.3.0 with its NVG illuminator. GAMMA and
 MCM are required. Install selected dependencies separately; use matching FOMOD
 choices in both Light mods. Native/G2X and standalone combinations retain local

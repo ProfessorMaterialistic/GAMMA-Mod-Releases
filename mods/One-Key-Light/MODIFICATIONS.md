@@ -1,3 +1,14 @@
+# Modified source — Light 2.2.2
+
+Bling / ProfessorMaterialistic corrects disabled-modifier input dispatch in
+one_key_lights_input.script and adds sprint/shortcut guidance to the maintained
+MCM presentation module and help generator. Physical chord tracking remains
+separate from the selected action route. No backend, sound, shader or third-party
+component changes. Earlier credits and scoped redistribution notices are retained.
+The owner authorized release after automated validation; gameplay is not yet verified.
+
+## Retained earlier modifications
+
 # Modified source — Light 2.2.1
 
 Bling / ProfessorMaterialistic extends the shared weapon-light availability gate

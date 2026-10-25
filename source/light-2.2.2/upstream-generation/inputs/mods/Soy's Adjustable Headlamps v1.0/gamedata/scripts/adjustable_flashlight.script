@@ -1,0 +1,989 @@
+local default_config_key = DIK_keys and DIK_keys.DIK_P or 25
+
+local flashlight_enabled = false
+local flashlight_light = nil
+
+local LIGHT_TYPE = 2
+
+-- Animated actor-bone anchor. Matches the working IR Headlamp placement.
+local FLASHLIGHT_ANCHOR_BONE = "bip01_head"
+local FLASHLIGHT_OFFSET_RIGHT = -0.20
+local FLASHLIGHT_OFFSET_UP = 0.10
+local FLASHLIGHT_OFFSET_FORWARD = 0.30
+
+local DEFAULT_BRIGHTNESS = 0.55
+local DEFAULT_RANGE = 30
+local DEFAULT_CONE_DEGREES = 50
+
+local applied_brightness = nil
+local applied_range = nil
+local applied_cone = nil
+
+-- GAMMA actor_effects owns the headlamp HUD animation, camera effector, and
+-- vanilla switch sound. This script owns only the adjustable ScriptLight state.
+
+-- Shared vanilla torch/BaS laser key state.
+-- BaS owns the 0.5 second laser hold. actor_effects also receives the same
+-- release, so this script suppresses held releases and duplicate tap calls.
+local BAS_HOLD_MS = 500
+local DUPLICATE_TOGGLE_WINDOW_MS = 150
+local torch_key_pressed_at = nil
+local last_key_toggle_at = -10000
+
+-- Resilient shared-key fallback. Some GAMMA/actor_effects builds can still
+-- play the vanilla animation/sound while failing before the adjustable-light
+-- switch callback executes. Schedule the ScriptLight state change at the
+-- normal headlamp switch point, but make the operation idempotent so a working
+-- actor_effects callback cannot double-toggle the light back off.
+local KEY_SWITCH_DELAY_SECONDS = 0.50
+local KEY_SWITCH_GROUP = "adjustable_flashlight_key_switch"
+local KEY_SWITCH_EVENT = "apply_target"
+local pending_key_target = nil
+local pending_key_started_at = -10000
+local pending_key_generation = 0
+local KEY_SWITCH_DEDUP_MS = 1000
+
+-- Temporary diagnostic tracing. Search the log for [AF TRACE].
+local TRACE_INSTANCE = tostring(time_global()) .. ":" .. tostring(math.random(100000, 999999))
+local trace_sequence = 0
+
+local function trace(message, ...)
+    trace_sequence = trace_sequence + 1
+    printf(
+        "[AF TRACE][instance=%s][seq=%s][time=%s] " .. message,
+        TRACE_INSTANCE,
+        tostring(trace_sequence),
+        tostring(time_global()),
+        ...
+    )
+end
+
+
+local function get_mcm_value(path, default)
+    if ui_mcm == nil or ui_mcm.get == nil then
+        return default
+    end
+
+    local value = ui_mcm.get(path)
+    if value == nil then
+        return default
+    end
+
+    return value
+end
+
+
+-- Kept registered for backwards compatibility and direct GUI access.
+-- MGI remains fully compatible; this does not own the gameplay torch key.
+local function get_config_key()
+    return tonumber(
+        get_mcm_value("adjustable_flashlight/config_key", default_config_key)
+    ) or default_config_key
+end
+
+
+local function clamp(value, minimum, maximum)
+    value = tonumber(value) or minimum
+
+    if value < minimum then
+        return minimum
+    end
+
+    if value > maximum then
+        return maximum
+    end
+
+    return value
+end
+
+
+local function get_brightness()
+    return clamp(
+        get_mcm_value("adjustable_flashlight/brightness", DEFAULT_BRIGHTNESS),
+        0.10,
+        1.20
+    )
+end
+
+
+local function get_light_range()
+    return clamp(
+        get_mcm_value("adjustable_flashlight/range", DEFAULT_RANGE),
+        5,
+        100
+    )
+end
+
+
+local function get_cone_degrees()
+    return clamp(
+        get_mcm_value("adjustable_flashlight/beam_size", DEFAULT_CONE_DEGREES),
+        10,
+        120
+    )
+end
+
+
+local function get_equipped_torch()
+    return db.actor and db.actor:item_in_slot(10) or nil
+end
+
+
+local function torch_can_operate()
+    local torch = get_equipped_torch()
+    if not torch then
+        return false
+    end
+
+    -- Use GAMMA's normal battery/critical-condition check when available.
+    if item_device and item_device.is_device_charged then
+        return item_device.is_device_charged(torch) == true
+    end
+
+    return true
+end
+
+
+-- GAMMA normally adds the flashlight-emission battery cost only while the
+-- physical engine torch reports torch_enabled(). Adjustable Flashlight keeps
+-- that physical beam suppressed and renders a ScriptLight instead, so the
+-- stock binder otherwise charges only the headlamp's base equipped-device
+-- consumption. Wrap the stock power function and add only the missing light
+-- emission cost while our custom beam is actually active.
+local function install_native_battery_drain()
+    if item_device == nil
+    or item_device.device_binder == nil
+    or item_device.device_binder.process_power == nil
+    or item_device.drain_device == nil then
+        return false
+    end
+
+    -- Also honor the flag used by the earlier standalone compatibility patch
+    -- so users cannot accidentally double-drain if that file is still present.
+    if item_device._soy_adjustable_flashlight_battery_patch == true
+    or item_device._soy_adjustable_flashlight_battery_integrated == true then
+        return true
+    end
+
+    local original_process_power = item_device.device_binder.process_power
+
+    item_device.device_binder.process_power = function(self, id, section, condition)
+        -- Preserve every part of GAMMA's normal device drain first: base slot
+        -- draw, NV draw, event losses, difficulty scaling, and condition logic.
+        original_process_power(self, id, section, condition)
+
+        if self == nil
+        or self.object == nil
+        or self.type ~= "TORCH" then
+            return
+        end
+
+        local torch = get_equipped_torch()
+        if torch == nil or torch:id() ~= id then
+            return
+        end
+
+        -- If the physical torch is on, GAMMA's original function already added
+        -- dev_consumption_act[section][1]. This also prevents double-drain when
+        -- predetermined IR deliberately owns the vanilla engine beam.
+        local ok_enabled, engine_enabled = pcall(function()
+            return self.object:torch_enabled()
+        end)
+        if ok_enabled and engine_enabled == true then
+            return
+        end
+
+        local custom_active = false
+        if adjustable_flashlight ~= nil
+        and adjustable_flashlight.is_active ~= nil then
+            local ok_active, active = pcall(adjustable_flashlight.is_active)
+            custom_active = ok_active and active == true
+        end
+
+        if not custom_active then
+            return
+        end
+
+        local action_table = item_device.dev_consumption_act
+            and item_device.dev_consumption_act[section]
+        local light_consumption = action_table and action_table[1] or 0
+
+        if light_consumption == nil or light_consumption == 0 then
+            return
+        end
+
+        -- Use GAMMA's own drain_device() so eco battery-consumption scaling,
+        -- amper_factor conversion, critical power, and condition clamping are
+        -- exactly the same as the normal headlamp path.
+        item_device.drain_device(self.object, section, light_consumption)
+    end
+
+    item_device._soy_adjustable_flashlight_battery_integrated = true
+    item_device._soy_adjustable_flashlight_battery_patch = true
+    printf("[Adjustable Flashlight] GAMMA native flashlight battery drain integrated")
+    return true
+end
+
+
+-- The preset-based IR headlamp uses the vanilla engine torch as its beam.
+-- Detect the requested IR state without depending on the torch already being
+-- lit, because this script may have physically suppressed that beam.
+local function ir_requires_vanilla_torch()
+    if ir_headlamp == nil then
+        return false
+    end
+
+    if ir_headlamp.get_status ~= nil then
+        local ok, status = pcall(ir_headlamp.get_status)
+
+        if ok and type(status) == "table" then
+            -- Future custom-light mode can explicitly opt out of vanilla
+            -- torch ownership while remaining compatible with this patch.
+            if status.uses_vanilla_torch == false then
+                return false
+            end
+
+            return status.enabled == true
+                and status.equipped == true
+                and status.deployed == true
+        end
+    end
+
+    -- Compatibility fallback for an older IR Headlamp API.
+    if ir_headlamp.is_ir_enabled ~= nil
+    and item_device ~= nil
+    and item_device.nv_state == true then
+        local ok, enabled = pcall(ir_headlamp.is_ir_enabled)
+        return ok and enabled == true
+    end
+
+    return false
+end
+
+
+
+-- A raised Anomaly handheld flashlight (D_FLALIT) is an active detector and
+-- owns its native beam in the engine. Adjustable Headlamps must not touch the
+-- shared torch/headlamp path while it is raised.
+local function handheld_flashlight_active()
+    if db == nil or db.actor == nil or db.actor.active_detector == nil then
+        return false
+    end
+
+    local ok, detector = pcall(function()
+        return db.actor:active_detector()
+    end)
+
+    if not ok or detector == nil then
+        return false
+    end
+
+    local ok_section, section = pcall(function()
+        return detector:section()
+    end)
+
+    return ok_section and section == "device_flashlight"
+end
+
+local VANILLA_SUPPRESS_GROUP = "adjustable_flashlight_vanilla_guard"
+
+local function vanilla_torch_is_active()
+    if item_device == nil or item_device.is_torch_active == nil then
+        return false
+    end
+
+    local ok, active = pcall(item_device.is_torch_active)
+    if not ok then
+        return false
+    end
+
+    -- Anomaly's item_device.is_torch_active() returns the active torch's
+    -- object ID, not boolean true. Treat any non-false/non-nil value as ON.
+    -- This is actor-only state; NPC headlamps remain binder/engine controlled.
+    return active ~= nil and active ~= false
+end
+
+-- Prevent the player's native headlamp beam from becoming visible before
+-- the adjustable ScriptLight reaches its animation switch frame.
+-- This wraps only the player torch helper; NPC headlamps remain engine/binder controlled.
+local function install_player_vanilla_torch_intercept()
+    if item_device == nil or item_device.toggle_torch == nil then
+        return false
+    end
+
+    if item_device._soy_adjustable_flashlight_toggle_intercept == true then
+        return true
+    end
+
+    local original_toggle_torch = item_device.toggle_torch
+    item_device._soy_adjustable_flashlight_original_toggle_torch = original_toggle_torch
+
+    item_device.toggle_torch = function(...)
+        if handheld_flashlight_active() then
+            return original_toggle_torch(...)
+        end
+
+        if ir_requires_vanilla_torch ~= nil and ir_requires_vanilla_torch() then
+            return original_toggle_torch(...)
+        end
+
+        -- Permit OFF calls, block only a new vanilla player-headlamp activation.
+        if vanilla_torch_is_active() then
+            return original_toggle_torch(...)
+        end
+
+        trace("blocked player vanilla torch activation")
+        return false
+    end
+
+    item_device._soy_adjustable_flashlight_toggle_intercept = true
+    printf("[Adjustable Flashlight] player vanilla torch activation intercepted")
+    return true
+end
+
+local function suppress_vanilla_torch()
+    -- Never alter any torch state while the engine-owned D_FLALIT handheld
+    -- flashlight is raised. Its native light must remain completely untouched.
+    if handheld_flashlight_active() then
+        return false
+    end
+
+    -- Predetermined IR deliberately owns the engine torch beam.
+    if ir_requires_vanilla_torch ~= nil and ir_requires_vanilla_torch() then
+        return false
+    end
+
+    local suppressed = false
+
+    -- Clear GAMMA's logical player-torch state if it became active.
+    if item_device ~= nil
+    and item_device.toggle_torch ~= nil
+    and vanilla_torch_is_active() then
+        local ok, err = pcall(item_device.toggle_torch)
+        if not ok then
+            printf("[Adjustable Flashlight] Failed to clear vanilla torch state: %s", tostring(err))
+        else
+            suppressed = true
+        end
+    end
+
+    -- Also force the equipped player torch's physical engine beam OFF. This
+    -- removes the brief native flash that can occur before the ScriptLight's
+    -- animation switch frame, including under Immersive Bodycam.
+    local torch = get_equipped_torch()
+    if torch ~= nil and torch.torch_enabled ~= nil and torch.enable_torch ~= nil then
+        local ok_enabled, engine_enabled = pcall(function()
+            return torch:torch_enabled()
+        end)
+
+        if ok_enabled and engine_enabled == true then
+            local ok_disable, err = pcall(function()
+                torch:enable_torch(false)
+            end)
+
+            if not ok_disable then
+                printf("[Adjustable Flashlight] Failed to force vanilla beam off: %s", tostring(err))
+            else
+                suppressed = true
+            end
+        end
+    end
+
+    if suppressed then
+        trace("vanilla torch state/beam suppressed")
+    end
+
+    return suppressed
+end
+
+local function schedule_vanilla_torch_suppression()
+    if handheld_flashlight_active() then
+        return
+    end
+
+    -- Some shared-key handlers toggle the engine torch after this script's
+    -- release callback. Check immediately and again after those callbacks.
+    local delays = { 0, 0.05, 0.15, 0.35, 0.65 }
+
+    for index, delay in ipairs(delays) do
+        local event_name = "suppress_" .. tostring(index)
+        RemoveTimeEvent(VANILLA_SUPPRESS_GROUP, event_name)
+        CreateTimeEvent(
+            VANILLA_SUPPRESS_GROUP,
+            event_name,
+            delay,
+            function()
+                suppress_vanilla_torch()
+                return true
+            end
+        )
+    end
+end
+
+-- Public reinforcement hook used by actor_effects after the shared kTORCH
+-- release. Predetermined IR is protected by suppress_vanilla_torch() itself.
+function suppress_vanilla_torch_after_input()
+    schedule_vanilla_torch_suppression()
+end
+
+
+local function destroy_flashlight()
+    if flashlight_light == nil then
+        return
+    end
+
+    local ok, err = pcall(function()
+        flashlight_light.enabled = false
+        flashlight_light:update()
+    end)
+
+    if not ok then
+        printf("[Adjustable Flashlight] Failed to destroy light: %s", tostring(err))
+    end
+
+    flashlight_light = nil
+    applied_brightness = nil
+    applied_range = nil
+    applied_cone = nil
+end
+
+
+local function apply_light_settings(force)
+    if flashlight_light == nil then
+        return
+    end
+
+    local brightness = get_brightness()
+    local range = get_light_range()
+    local cone_degrees = get_cone_degrees()
+
+    if force or applied_brightness ~= brightness then
+        local color = fcolor()
+        color:set(brightness, brightness, brightness, 1.0)
+        flashlight_light.color = color
+        applied_brightness = brightness
+    end
+
+    if force or applied_range ~= range then
+        flashlight_light.range = range
+        applied_range = range
+    end
+
+    if force or applied_cone ~= cone_degrees then
+        flashlight_light:set_cone(math.rad(cone_degrees))
+        applied_cone = cone_degrees
+    end
+end
+
+
+local function create_flashlight()
+    if flashlight_light ~= nil then
+        return true
+    end
+
+    local ok, light = pcall(script_light)
+    if not ok or light == nil then
+        printf("[Adjustable Flashlight] Failed to create script_light")
+        return false
+    end
+
+    flashlight_light = light
+
+    local function try_set(name, value)
+        local success, err = pcall(function()
+            flashlight_light[name] = value
+        end)
+
+        if not success then
+            printf(
+                "[Adjustable Flashlight] ScriptLight property failed: %s | %s",
+                name,
+                tostring(err)
+            )
+        end
+
+        return success
+    end
+
+    try_set("type", LIGHT_TYPE)
+    try_set("shadow", true)
+    try_set("volumetric", false)
+    try_set("hud_mode", false)
+    try_set("enabled", false)
+
+    local settings_ok, settings_err = pcall(function()
+        apply_light_settings(true)
+    end)
+
+    if not settings_ok then
+        printf(
+            "[Adjustable Flashlight] Failed to apply light settings: %s",
+            tostring(settings_err)
+        )
+        flashlight_light = nil
+        return false
+    end
+
+    local updated, update_err = pcall(function()
+        flashlight_light:update()
+    end)
+
+    if not updated then
+        printf(
+            "[Adjustable Flashlight] Initial update failed: %s",
+            tostring(update_err)
+        )
+        flashlight_light = nil
+        return false
+    end
+
+    return true
+end
+
+
+local function normalize_anchor_vector(v)
+    local length = math.sqrt((v.x * v.x) + (v.y * v.y) + (v.z * v.z))
+    if length <= 0.000001 then
+        return false
+    end
+    v:set(v.x / length, v.y / length, v.z / length)
+    return true
+end
+
+local function cross_anchor_vectors(a, b)
+    local result = vector()
+    result:set(
+        (a.y * b.z) - (a.z * b.y),
+        (a.z * b.x) - (a.x * b.z),
+        (a.x * b.y) - (a.y * b.x)
+    )
+    return result
+end
+
+local function get_flashlight_anchor_position(direction, right, fallback_position)
+    local anchor = nil
+
+    if db.actor ~= nil and db.actor.bone_position ~= nil then
+        local ok, bone_position = pcall(function()
+            return db.actor:bone_position(FLASHLIGHT_ANCHOR_BONE)
+        end)
+        if ok and bone_position ~= nil then
+            anchor = bone_position
+        end
+    end
+
+    if anchor == nil then
+        anchor = fallback_position
+    end
+
+    local up = cross_anchor_vectors(direction, right)
+    if not normalize_anchor_vector(up) then
+        up:set(0, 1, 0)
+    end
+
+    local position = vector()
+    position:set(
+        anchor.x + (right.x * FLASHLIGHT_OFFSET_RIGHT) + (up.x * FLASHLIGHT_OFFSET_UP) + (direction.x * FLASHLIGHT_OFFSET_FORWARD),
+        anchor.y + (right.y * FLASHLIGHT_OFFSET_RIGHT) + (up.y * FLASHLIGHT_OFFSET_UP) + (direction.y * FLASHLIGHT_OFFSET_FORWARD),
+        anchor.z + (right.z * FLASHLIGHT_OFFSET_RIGHT) + (up.z * FLASHLIGHT_OFFSET_UP) + (direction.z * FLASHLIGHT_OFFSET_FORWARD)
+    )
+    return position
+end
+
+
+local function update_flashlight()
+    -- Preset IR takes priority over the adjustable visible ScriptLight. Keep
+    -- the user's adjustable-light state, but suspend its beam until IR ends.
+    if ir_requires_vanilla_torch() then
+        if flashlight_light ~= nil and flashlight_light.enabled then
+            flashlight_light.enabled = false
+            flashlight_light:update()
+        end
+        return
+    end
+
+    if not flashlight_enabled then
+        if flashlight_light ~= nil and flashlight_light.enabled then
+            flashlight_light.enabled = false
+            flashlight_light:update()
+        end
+        return
+    end
+
+    if not torch_can_operate() then
+        flashlight_enabled = false
+        destroy_flashlight()
+        return
+    end
+
+    if not create_flashlight() then
+        return
+    end
+
+    local dev = device()
+    if dev == nil then
+        return
+    end
+
+    apply_light_settings(false)
+
+    local light_direction = dev.cam_dir
+    local light_right = nil
+
+    if dev.cam_right ~= nil then
+        light_right = dev.cam_right
+    else
+        light_right = vector()
+        light_right:set(light_direction.z, 0, -light_direction.x)
+
+        local right_length = math.sqrt(
+            (light_right.x * light_right.x)
+            + (light_right.y * light_right.y)
+            + (light_right.z * light_right.z)
+        )
+
+        if right_length > 0.000001 then
+            light_right:set(
+                light_right.x / right_length,
+                light_right.y / right_length,
+                light_right.z / right_length
+            )
+        else
+            light_right:set(1, 0, 0)
+        end
+    end
+
+    -- Position only: anchor the light to the animated actor head bone.
+    -- Direction remains the normal camera direction in this non-Bodycam build.
+    local light_position = get_flashlight_anchor_position(
+        light_direction,
+        light_right,
+        dev.cam_pos
+    )
+
+    flashlight_light:set_position(light_position)
+    flashlight_light:set_direction(light_direction, light_right)
+
+    if not flashlight_light.enabled then
+        flashlight_light.enabled = true
+    end
+
+    flashlight_light:update()
+end
+
+
+function is_enabled()
+    return flashlight_enabled
+end
+
+
+function is_active()
+    return flashlight_enabled
+        and flashlight_light ~= nil
+        and flashlight_light.enabled == true
+end
+
+
+function get_status()
+    return {
+        enabled = flashlight_enabled,
+        torch = is_active(),
+    }
+end
+
+
+function set_enabled(enabled)
+    enabled = enabled == true
+    trace("set_enabled entered | requested=%s | current=%s", tostring(enabled), tostring(flashlight_enabled))
+
+    if enabled and not torch_can_operate() then
+        trace("set_enabled rejected: battery/device unavailable")
+        return false
+    end
+
+    if flashlight_enabled == enabled then
+        return true
+    end
+
+    flashlight_enabled = enabled
+    trace("set_enabled state changed | new=%s", tostring(flashlight_enabled))
+
+    if not flashlight_enabled then
+        destroy_flashlight()
+    else
+        update_flashlight()
+    end
+
+    trace("set_enabled completed | enabled=%s | active=%s", tostring(flashlight_enabled), tostring(is_active()))
+    return true
+end
+
+
+-- Called by actor_effects at GAMMA's actual headlamp switch frame. Keep this
+-- intentionally state-only: actor_effects already owns animation and sound.
+function toggle_from_vanilla()
+    local now = time_global()
+    trace("toggle_from_vanilla: GAMMA switch frame | current=%s | pending_target=%s", tostring(flashlight_enabled), tostring(pending_key_target))
+
+    local target = nil
+    if pending_key_target ~= nil
+    and (now - pending_key_started_at) <= KEY_SWITCH_DEDUP_MS then
+        -- A physical short press already chose its target state. Use that exact
+        -- target instead of blindly inverting current state. This makes the
+        -- actor_effects switch callback and our timed fallback converge on one
+        -- result regardless of which one executes first.
+        target = pending_key_target
+    else
+        target = not flashlight_enabled
+    end
+
+    local result = set_enabled(target)
+
+    if result then
+        schedule_vanilla_torch_suppression()
+    end
+
+    -- Once actor_effects reaches the switch frame, the pending fallback can be
+    -- considered satisfied. The scheduled event is harmless if it still fires
+    -- because set_enabled(target) is idempotent, but clearing here also makes
+    -- later independent toggles easier to reason about.
+    pending_key_target = nil
+
+    trace("toggle_from_vanilla completed | target=%s | result=%s | enabled=%s | active=%s", tostring(target), tostring(result), tostring(flashlight_enabled), tostring(is_active()))
+    return result
+end
+
+
+-- Direct state control for MGI/GUI and compatibility callers. This function
+-- deliberately does not play a second animation or sound.
+function toggle_immediate()
+    return set_enabled(not flashlight_enabled)
+end
+
+
+function toggle()
+    local now = time_global()
+
+    if handheld_flashlight_active() then
+        trace("toggle ignored: handheld device_flashlight active")
+        return false
+    end
+
+    -- A held torch key belongs exclusively to BaS laser control.
+    if torch_key_pressed_at ~= nil
+    and (now - torch_key_pressed_at) >= BAS_HOLD_MS then
+        trace("toggle suppressed: BaS hold | held_ms=%s", tostring(now - torch_key_pressed_at))
+        return false
+    end
+
+    if (now - last_key_toggle_at) <= DUPLICATE_TOGGLE_WINDOW_MS then
+        trace("toggle suppressed: duplicate shared-key callback | delta_ms=%s", tostring(now - last_key_toggle_at))
+        return false
+    end
+
+    last_key_toggle_at = now
+
+    -- Compatibility entry point for older integrations that still call
+    -- adjustable_flashlight.toggle() on a short Torch release. GAMMA remains
+    -- the sole animation/sound owner. allow_animation() in actor_effects also
+    -- rejects a duplicate invocation while its state machine is already active.
+    if actor_effects ~= nil and actor_effects.Hit_TorchToggle ~= nil then
+        trace("toggle handing short press to GAMMA Hit_TorchToggle")
+        return actor_effects.Hit_TorchToggle()
+    end
+
+    trace("toggle fallback: actor_effects unavailable, toggling immediately")
+    return toggle_from_vanilla()
+end
+
+
+-- actor_effects is the sole owner of the normal kTORCH release.
+-- Do not replace actor_effects.Hit_TorchToggle here: BaS may capture that
+-- function and invoke it as a second independent release path.
+
+function on_key_press(dik)
+    local bind = dik_to_bind(dik)
+
+    if bind == key_bindings.kTORCH then
+        if handheld_flashlight_active() then
+            -- Clear any stale headlamp press state and leave D_FLALIT alone.
+            torch_key_pressed_at = nil
+            pending_key_generation = pending_key_generation + 1
+            pending_key_target = nil
+            RemoveTimeEvent(KEY_SWITCH_GROUP, KEY_SWITCH_EVENT)
+            trace("shared torch key ignored: handheld device_flashlight active")
+            return
+        end
+
+        if torch_key_pressed_at == nil then
+            torch_key_pressed_at = time_global()
+            trace("shared torch key pressed | started_at=%s", tostring(torch_key_pressed_at))
+        end
+        return
+    end
+
+    if dik == get_config_key() then
+        if adjustable_flashlight_ui ~= nil
+        and adjustable_flashlight_ui.open_dialog ~= nil then
+            adjustable_flashlight_ui.open_dialog()
+        end
+    end
+end
+
+
+function should_suppress_torch_release()
+    if handheld_flashlight_active() then
+        return false
+    end
+
+    if torch_key_pressed_at == nil then
+        return false
+    end
+
+    local held_ms = time_global() - torch_key_pressed_at
+    local suppress = held_ms >= BAS_HOLD_MS
+    if suppress then
+        trace("should_suppress_torch_release=true | held_ms=%s", tostring(held_ms))
+    end
+    return suppress
+end
+
+
+function on_key_release(dik)
+    local bind = dik_to_bind(dik)
+    if bind ~= key_bindings.kTORCH then
+        return
+    end
+
+    if handheld_flashlight_active() then
+        -- The handheld's D_FLALIT beam is controlled by its detector lifecycle,
+        -- not Adjustable Headlamps. Do not suppress, toggle, animate, or queue
+        -- any headlamp work from this release.
+        torch_key_pressed_at = nil
+        pending_key_generation = pending_key_generation + 1
+        pending_key_target = nil
+        RemoveTimeEvent(KEY_SWITCH_GROUP, KEY_SWITCH_EVENT)
+        trace("shared torch release ignored: handheld device_flashlight active")
+        return
+    end
+
+    local released_at = time_global()
+    local pressed_at = torch_key_pressed_at
+    local held_ms = pressed_at ~= nil and (released_at - pressed_at) or BAS_HOLD_MS
+
+    trace("shared torch key released | held_ms=%s | current=%s", tostring(held_ms), tostring(flashlight_enabled))
+
+    -- Always keep the physical vanilla beam suppressed. This does not affect
+    -- the GAMMA HUD animation or switch sound.
+    schedule_vanilla_torch_suppression()
+
+    if pressed_at ~= nil and held_ms < BAS_HOLD_MS then
+        pending_key_generation = pending_key_generation + 1
+        local generation = pending_key_generation
+        local target = not flashlight_enabled
+
+        pending_key_target = target
+        pending_key_started_at = released_at
+        last_key_toggle_at = released_at
+
+        RemoveTimeEvent(KEY_SWITCH_GROUP, KEY_SWITCH_EVENT)
+        CreateTimeEvent(
+            KEY_SWITCH_GROUP,
+            KEY_SWITCH_EVENT,
+            KEY_SWITCH_DELAY_SECONDS,
+            function()
+                if generation ~= pending_key_generation then
+                    return true
+                end
+
+                -- If actor_effects already applied the same target, this is a
+                -- no-op. If actor_effects failed before its switch callback,
+                -- this is the recovery path that actually turns the light on.
+                local desired = pending_key_target
+                if desired == nil then
+                    desired = target
+                end
+
+                trace("timed key switch firing | target=%s | current=%s", tostring(desired), tostring(flashlight_enabled))
+                local ok, result = pcall(set_enabled, desired)
+                if not ok then
+                    printf("[Adjustable Flashlight] timed key switch failed: %s", tostring(result))
+                else
+                    trace("timed key switch completed | result=%s | enabled=%s | active=%s", tostring(result), tostring(flashlight_enabled), tostring(is_active()))
+                end
+
+                pending_key_target = nil
+                schedule_vanilla_torch_suppression()
+                return true
+            end
+        )
+    else
+        -- Long hold belongs to BaS laser control only. Invalidate any stale
+        -- scheduled tap event so it cannot fire after a laser hold.
+        pending_key_generation = pending_key_generation + 1
+        pending_key_target = nil
+        RemoveTimeEvent(KEY_SWITCH_GROUP, KEY_SWITCH_EVENT)
+        trace("shared torch release reserved for BaS hold")
+    end
+
+    -- Keep the press timestamp alive until all same-frame release callbacks have
+    -- queried should_suppress_torch_release(), then clear it.
+    CreateTimeEvent(
+        "adjustable_flashlight_input",
+        "clear_torch_press",
+        0,
+        function()
+            torch_key_pressed_at = nil
+            return true
+        end
+    )
+end
+
+
+
+function actor_on_update()
+    if handheld_flashlight_active() then
+        -- Preserve the user's adjustable-headlamp ON/OFF state, but suspend its
+        -- ScriptLight while the handheld D_FLALIT is physically raised. Most
+        -- importantly, do not suppress or alter any native engine torch state.
+        if flashlight_light ~= nil and flashlight_light.enabled then
+            flashlight_light.enabled = false
+            flashlight_light:update()
+        end
+        return
+    end
+
+    if flashlight_enabled and not ir_requires_vanilla_torch() then
+        suppress_vanilla_torch()
+    end
+
+    if db.actor == nil then
+        flashlight_enabled = false
+        destroy_flashlight()
+        return
+    end
+
+    update_flashlight()
+end
+
+
+function actor_on_first_update()
+    trace("actor_on_first_update")
+    install_player_vanilla_torch_intercept()
+    install_native_battery_drain()
+    flashlight_enabled = false
+    destroy_flashlight()
+end
+
+
+function on_game_start()
+    install_player_vanilla_torch_intercept()
+    printf("[AFDBG] [Normal] handheld ownership patch v1 loaded")
+    printf("[Adjustable Flashlight] single-file BaS shared-key integration loaded")
+    install_native_battery_drain()
+    trace("on_game_start | input_owner=kTORCH(actor_effects) | config_key=%s", tostring(get_config_key()))
+    RegisterScriptCallback("on_key_press", on_key_press)
+    RegisterScriptCallback("on_key_release", on_key_release)
+    RegisterScriptCallback("actor_on_update", actor_on_update)
+    RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
+end
