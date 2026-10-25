@@ -1,0 +1,714 @@
+local default_toggle_key = 55
+local default_config_key = DIK_keys and DIK_keys.DIK_P or 25
+
+local ir_enabled = false
+local previous_nv_state = nil
+local ir_light = nil
+
+local LIGHT_TYPE = 2
+
+local DEFAULT_BRIGHTNESS = 0.55
+local DEFAULT_RANGE = 30
+local DEFAULT_CONE_DEGREES = 50
+
+-- Animated actor-bone anchor for the customizable IR light.
+-- Change these values to tune the light origin without altering the aim logic.
+local IR_ANCHOR_BONE = "bip01_head"
+local IR_OFFSET_RIGHT = -0.20
+local IR_OFFSET_UP = 0.10
+local IR_OFFSET_FORWARD = 0.30
+
+local applied_brightness = nil
+local applied_range = nil
+local applied_cone = nil
+
+
+local function get_mcm_value(path, default)
+    if ui_mcm == nil or ui_mcm.get == nil then
+        return default
+    end
+
+    local value = ui_mcm.get(path)
+
+    if value == nil then
+        return default
+    end
+
+    return value
+end
+
+
+local function get_toggle_key()
+    return tonumber(
+        get_mcm_value("ir_headlamp/toggle_key", default_toggle_key)
+    ) or default_toggle_key
+end
+
+
+local function get_config_key()
+    return tonumber(
+        get_mcm_value("ir_headlamp/config_key", default_config_key)
+    ) or default_config_key
+end
+
+
+local default_toggle_modifier = 0
+local default_config_modifier = 0
+
+local function get_toggle_modifier()
+    return tonumber(
+        get_mcm_value("ir_headlamp/toggle_modifier", default_toggle_modifier)
+    ) or default_toggle_modifier
+end
+
+
+local function get_config_modifier()
+    return tonumber(
+        get_mcm_value("ir_headlamp/config_modifier", default_config_modifier)
+    ) or default_config_modifier
+end
+
+
+local function dik_pressed(left, right)
+    return (key_state(left) or 0) ~= 0
+        or (key_state(right) or 0) ~= 0
+end
+
+
+local function configured_modifier_pressed(modifier)
+    modifier = tonumber(modifier) or 0
+
+    local shift = dik_pressed(
+        DIK_keys.DIK_LSHIFT,
+        DIK_keys.DIK_RSHIFT
+    )
+    local ctrl = dik_pressed(
+        DIK_keys.DIK_LCONTROL,
+        DIK_keys.DIK_RCONTROL
+    )
+    local alt = dik_pressed(
+        DIK_keys.DIK_LMENU,
+        DIK_keys.DIK_RMENU
+    )
+
+    if modifier == 1 then
+        return shift
+    elseif modifier == 2 then
+        return ctrl
+    elseif modifier == 3 then
+        return alt
+    end
+
+    -- "None" requires the base key without Shift, Ctrl, or Alt.
+    return not (shift or ctrl or alt)
+end
+
+
+
+
+local function sound_enabled()
+    return get_mcm_value("ir_headlamp/play_sound", true) == true
+end
+
+
+local function auto_sync_enabled()
+    return get_mcm_value("ir_headlamp/auto_sync", true) == true
+end
+
+
+local function clamp(value, minimum, maximum)
+    value = tonumber(value) or minimum
+
+    if value < minimum then
+        return minimum
+    end
+
+    if value > maximum then
+        return maximum
+    end
+
+    return value
+end
+
+
+local function get_brightness()
+    return clamp(
+        get_mcm_value("ir_headlamp/brightness", DEFAULT_BRIGHTNESS),
+        0.10,
+        1.20
+    )
+end
+
+
+local function get_light_range()
+    return clamp(
+        get_mcm_value("ir_headlamp/range", DEFAULT_RANGE),
+        5,
+        100
+    )
+end
+
+
+local function get_cone_degrees()
+    return clamp(
+        get_mcm_value("ir_headlamp/beam_size", DEFAULT_CONE_DEGREES),
+        10,
+        120
+    )
+end
+
+
+local function play_ir_toggle_sound(enabled)
+    if not sound_enabled() or db.actor == nil then
+        return
+    end
+
+    local sound_path = enabled
+        and "ir_headlamp\\snd_switch_on"
+        or "ir_headlamp\\snd_switch_off"
+
+    local snd_obj = sound_object(sound_path)
+    snd_obj:play(db.actor, 0, sound_object.s2d)
+end
+
+
+local function get_nv_state()
+    return item_device ~= nil
+        and item_device.nv_state == true
+end
+
+
+local function has_equipped_nvgs()
+    if db.actor == nil or ini_sys == nil then
+        return false
+    end
+
+    for slot = 0, 15 do
+        local item = db.actor:item_in_slot(slot)
+
+        if item then
+            local section = item:section()
+
+            if section
+            and ini_sys:r_string_ex(section, "nv_effect") ~= nil then
+                return true
+            end
+        end
+    end
+
+    return false
+end
+
+local function has_ir_illuminator()
+    return ir_nvg_module ~= nil
+        and ir_nvg_module.has_module_on_equipped_nvg ~= nil
+        and ir_nvg_module.has_module_on_equipped_nvg() == true
+end
+
+
+
+local function destroy_ir_light()
+    if ir_light == nil then
+        return
+    end
+
+    ir_light.enabled = false
+    ir_light:update()
+    ir_light = nil
+    applied_brightness = nil
+    applied_range = nil
+    applied_cone = nil
+end
+
+
+local function apply_light_settings(force)
+    if ir_light == nil then
+        return
+    end
+
+    local brightness = get_brightness()
+    local range = get_light_range()
+    local cone_degrees = get_cone_degrees()
+    local cone_radians = math.rad(cone_degrees)
+
+    if force or applied_brightness ~= brightness then
+        local color = fcolor()
+        color:set(brightness, brightness, brightness, 1.0)
+        ir_light.color = color
+        applied_brightness = brightness
+    end
+
+    if force or applied_range ~= range then
+        ir_light.range = range
+        applied_range = range
+    end
+
+    if force or applied_cone ~= cone_degrees then
+        ir_light:set_cone(cone_radians)
+        applied_cone = cone_degrees
+    end
+end
+
+
+local function create_ir_light()
+    if ir_light ~= nil then
+        return true
+    end
+
+    local ok, light = pcall(script_light)
+
+    if not ok or light == nil then
+        printf("[IR Headlamp] Failed to create script_light")
+        return false
+    end
+
+    ir_light = light
+
+    -- Configure each exported property safely. Some Modded Exes builds expose
+    -- ScriptLight.color differently, so leave color at its engine default for
+    -- this test rather than allowing a property error to corrupt the script state.
+    local function try_set(name, value)
+        local success, err = pcall(function()
+            ir_light[name] = value
+        end)
+
+        if not success then
+            printf("[IR Headlamp] ScriptLight property failed: %s | %s", name, tostring(err))
+        end
+
+        return success
+    end
+
+    try_set("type", LIGHT_TYPE)
+    try_set("shadow", true)
+    try_set("volumetric", false)
+    try_set("hud_mode", false)
+    try_set("enabled", false)
+
+    local settings_ok, settings_err = pcall(function()
+        apply_light_settings(true)
+    end)
+
+    if not settings_ok then
+        printf("[IR Headlamp] Failed to apply light settings: %s", tostring(settings_err))
+        ir_light = nil
+        return false
+    end
+
+    local updated, update_err = pcall(function()
+        ir_light:update()
+    end)
+
+    if not updated then
+        printf("[IR Headlamp] ScriptLight initial update failed: %s", tostring(update_err))
+        ir_light = nil
+        return false
+    end
+
+    return true
+end
+
+
+local function should_light_be_active()
+    return ir_enabled
+        and has_ir_illuminator()
+        and get_nv_state()
+end
+
+
+
+
+-- Optional orientation provider API -----------------------------------------
+-- The base IR Headlamp always follows the normal camera unless a separately
+-- installed compatibility patch registers an alternate orientation provider.
+local orientation_provider = nil
+
+function register_orientation_provider(provider)
+    if provider ~= nil and type(provider) ~= "function" then
+        return false
+    end
+
+    orientation_provider = provider
+    return true
+end
+
+function clear_orientation_provider(provider)
+    if provider == nil or orientation_provider == provider then
+        orientation_provider = nil
+        return true
+    end
+
+    return false
+end
+
+local function get_override_orientation()
+    if orientation_provider == nil then
+        return nil, nil
+    end
+
+    local ok, direction, right = pcall(orientation_provider)
+
+    if not ok then
+        printf("[IR Headlamp] Orientation provider failed: %s", tostring(direction))
+        return nil, nil
+    end
+
+    return direction, right
+end
+
+local function vector_length(v)
+    return math.sqrt((v.x * v.x) + (v.y * v.y) + (v.z * v.z))
+end
+
+local function normalize_vector(v)
+    local length = vector_length(v)
+
+    if length <= 0.000001 then
+        return false
+    end
+
+    v:set(v.x / length, v.y / length, v.z / length)
+    return true
+end
+
+local function cross_vectors(a, b)
+    local result = vector()
+    result:set(
+        (a.y * b.z) - (a.z * b.y),
+        (a.z * b.x) - (a.x * b.z),
+        (a.x * b.y) - (a.y * b.x)
+    )
+    return result
+end
+
+local function get_ir_anchor_position(direction, right, fallback_position)
+    local anchor = nil
+
+    if db.actor ~= nil and db.actor.bone_position ~= nil then
+        local ok, bone_position = pcall(function()
+            return db.actor:bone_position(IR_ANCHOR_BONE)
+        end)
+
+        if ok and bone_position ~= nil then
+            anchor = bone_position
+        end
+    end
+
+    if anchor == nil then
+        anchor = fallback_position
+    end
+
+    local up = cross_vectors(direction, right)
+
+    if not normalize_vector(up) then
+        up:set(0, 1, 0)
+    end
+
+    local position = vector()
+    position:set(
+        anchor.x
+            + (right.x * IR_OFFSET_RIGHT)
+            + (up.x * IR_OFFSET_UP)
+            + (direction.x * IR_OFFSET_FORWARD),
+        anchor.y
+            + (right.y * IR_OFFSET_RIGHT)
+            + (up.y * IR_OFFSET_UP)
+            + (direction.y * IR_OFFSET_FORWARD),
+        anchor.z
+            + (right.z * IR_OFFSET_RIGHT)
+            + (up.z * IR_OFFSET_UP)
+            + (direction.z * IR_OFFSET_FORWARD)
+    )
+
+    return position
+end
+
+
+-- Script-only Bodycam approximation state.
+-- Horizontal aim follows the actor body, vertical aim follows camera pitch.
+-- This avoids all weapon/HUD bone input while preserving customizable light settings.
+local smoothed_bodycam_direction = nil
+local smoothed_bodycam_right = nil
+local BODYCAM_DIRECTION_RESPONSE = 0.18
+
+local function copy_vector(source)
+    local result = vector()
+    result:set(source.x, source.y, source.z)
+    return result
+end
+
+local function blend_normalized(current, target, response)
+    if current == nil then
+        return copy_vector(target)
+    end
+
+    current:set(
+        current.x + ((target.x - current.x) * response),
+        current.y + ((target.y - current.y) * response),
+        current.z + ((target.z - current.z) * response)
+    )
+
+    if not normalize_vector(current) then
+        current:set(target.x, target.y, target.z)
+    end
+
+    return current
+end
+
+local function get_bodycam_approx_orientation(dev)
+    if db.actor == nil or db.actor.direction == nil then
+        return dev.cam_dir, dev.cam_right
+    end
+
+    local ok, actor_direction = pcall(function()
+        return db.actor:direction()
+    end)
+
+    if not ok or actor_direction == nil then
+        return dev.cam_dir, dev.cam_right
+    end
+
+    -- Match the working Adjustable Flashlight Bodycam transform exactly:
+    -- actor direction provides decoupled horizontal yaw, while the rendered
+    -- camera direction provides vertical pitch.
+    local horizontal_length = math.sqrt(
+        (actor_direction.x * actor_direction.x)
+        + (actor_direction.z * actor_direction.z)
+    )
+
+    if horizontal_length <= 0.000001 then
+        return dev.cam_dir, dev.cam_right
+    end
+
+    local pitch_y = dev.cam_dir and dev.cam_dir.y or 0
+    pitch_y = clamp(pitch_y, -0.98, 0.98)
+    local horizontal_scale = math.sqrt(1 - (pitch_y * pitch_y))
+
+    local target_direction = vector()
+    target_direction:set(
+        (actor_direction.x / horizontal_length) * horizontal_scale,
+        pitch_y,
+        (actor_direction.z / horizontal_length) * horizontal_scale
+    )
+
+    if not normalize_vector(target_direction) then
+        return dev.cam_dir, dev.cam_right
+    end
+
+    local target_right = vector()
+    target_right:set(target_direction.z, 0, -target_direction.x)
+
+    if not normalize_vector(target_right) then
+        target_right:set(1, 0, 0)
+    end
+
+    smoothed_bodycam_direction = blend_normalized(
+        smoothed_bodycam_direction,
+        target_direction,
+        BODYCAM_DIRECTION_RESPONSE
+    )
+
+    smoothed_bodycam_right = blend_normalized(
+        smoothed_bodycam_right,
+        target_right,
+        BODYCAM_DIRECTION_RESPONSE
+    )
+
+    return smoothed_bodycam_direction, smoothed_bodycam_right
+end
+
+local function update_ir_light()
+    local active = should_light_be_active()
+
+    if not active then
+        if ir_light ~= nil and ir_light.enabled then
+            ir_light.enabled = false
+            ir_light:update()
+        end
+        return
+    end
+
+    if not create_ir_light() then
+        return
+    end
+
+    local dev = device()
+
+    if dev == nil then
+        return
+    end
+
+    apply_light_settings(false)
+
+    -- This Bodycam replacement intentionally ignores registered orientation
+    -- providers. Older compatibility scripts can otherwise override this path
+    -- with head-bone or weapon-bone vectors and suppress vertical movement.
+    local light_direction, light_right = get_bodycam_approx_orientation(dev)
+
+    if light_right == nil then
+        -- Compatibility fallback for an engine build that does not export
+        -- cam_right. Derive a horizontal right vector from world up.
+        light_right = vector()
+        light_right:set(light_direction.z, 0, -light_direction.x)
+
+        if not normalize_vector(light_right) then
+            light_right:set(1, 0, 0)
+        end
+    end
+
+    local light_position = get_ir_anchor_position(
+        light_direction,
+        light_right,
+        dev.cam_pos
+    )
+
+    ir_light:set_position(light_position)
+    ir_light:set_direction(light_direction, light_right)
+
+    if not ir_light.enabled then
+        ir_light.enabled = true
+    end
+
+    ir_light:update()
+end
+
+
+function is_ir_enabled()
+    return ir_enabled
+        and has_ir_illuminator()
+end
+
+
+function is_ir_active()
+    return should_light_be_active()
+        and ir_light ~= nil
+        and ir_light.enabled == true
+end
+
+
+function get_status()
+    return {
+        enabled = is_ir_enabled(),
+        equipped = has_equipped_nvgs(),
+        illuminator = has_ir_illuminator(),
+        deployed = get_nv_state(),
+        torch = is_ir_active(),
+        auto_sync = auto_sync_enabled(),
+        play_sound = sound_enabled(),
+    }
+end
+
+
+function set_ir_enabled(enabled)
+    enabled = enabled == true
+
+    if enabled and not has_ir_illuminator() then
+        return false
+    end
+
+    if ir_enabled == enabled then
+        return true
+    end
+
+    ir_enabled = enabled
+    play_ir_toggle_sound(ir_enabled)
+
+    if not ir_enabled then
+        destroy_ir_light()
+    else
+        update_ir_light()
+    end
+
+    return true
+end
+
+
+function toggle_ir()
+    return set_ir_enabled(not ir_enabled)
+end
+
+
+function on_key_press(dik)
+    if dik == get_config_key()
+    and configured_modifier_pressed(get_config_modifier()) then
+        ir_headlamp_ui.open_dialog()
+        return
+    end
+
+    if dik ~= get_toggle_key()
+    or not configured_modifier_pressed(get_toggle_modifier()) then
+        return
+    end
+
+    if not has_ir_illuminator() then
+        return
+    end
+
+    toggle_ir()
+end
+
+
+function actor_on_update()
+    if db.actor == nil or item_device == nil then
+        previous_nv_state = nil
+        destroy_ir_light()
+        return
+    end
+
+    if not has_ir_illuminator() then
+        if ir_enabled then
+            ir_enabled = false
+        end
+
+        previous_nv_state = nil
+        destroy_ir_light()
+        return
+    end
+
+    local current_nv_state = get_nv_state()
+
+    if previous_nv_state == nil then
+        previous_nv_state = current_nv_state
+
+        -- Auto Sync is an automatic activation trigger only. It does not
+        -- force the IR light to stay on after the player manually disables it.
+        if auto_sync_enabled() and current_nv_state and not ir_enabled then
+            set_ir_enabled(true)
+        end
+    elseif current_nv_state ~= previous_nv_state then
+        local nvgs_just_turned_on =
+            current_nv_state and not previous_nv_state
+
+        previous_nv_state = current_nv_state
+
+        if auto_sync_enabled()
+        and nvgs_just_turned_on
+        and not ir_enabled then
+            set_ir_enabled(true)
+        end
+    end
+
+    update_ir_light()
+end
+
+
+function actor_on_first_update()
+    ir_enabled = false
+    smoothed_bodycam_direction = nil
+    smoothed_bodycam_right = nil
+    destroy_ir_light()
+
+    if has_ir_illuminator() then
+        previous_nv_state = get_nv_state()
+    else
+        previous_nv_state = nil
+    end
+end
+
+
+function on_game_start()
+    printf("[IR Headlamp] Adjustable-transform Bodycam fix loaded")
+    RegisterScriptCallback("on_key_press", on_key_press)
+    RegisterScriptCallback("actor_on_update", actor_on_update)
+    RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
+end

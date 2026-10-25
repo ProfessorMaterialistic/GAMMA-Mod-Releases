@@ -36,3 +36,11 @@ The matched RC was owner accepted. Stable promotion changes documentation and
 display labels only. Existing component permissions, notices and original
 license texts are retained. Portable preferred source under source/light-2.1.2
 reproduces all 85 final runtime/assets; historical source remains intact.
+
+## October 24 — Light 2.2.0
+
+Matched release with grouped modifier gestures, threshold-based Momentary Hold,
+Tap/Double availability, restored ON/OFF sound feedback and retained laser fixes.
+Owner-confirmed on rc.7; stable changes labels/docs only. Existing permissions and
+notices cover the same integrated derivatives; no new third-party source/artwork.
+Portable corresponding source and exact inputs: `source/light-2.2.0`.

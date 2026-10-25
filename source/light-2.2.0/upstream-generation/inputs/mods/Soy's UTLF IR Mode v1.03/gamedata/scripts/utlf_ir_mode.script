@@ -1,0 +1,810 @@
+-- UTLF IR Mode addon
+-- Standalone compatibility layer for the modular UTLF framework.
+-- This file must NOT replace utlf.script or any official utlf_* module.
+
+local DEFAULT_IR_KEY = DIK_keys and DIK_keys.DIK_I or 23
+local DEFAULT_IR_MODIFIER = 1 -- Shift
+local snd_tactical_light = sound_object("interface\\inv_torch")
+
+local ir_requested = false
+local previous_nv_state = nil
+local key_down = false
+local last_ir_light_section = nil
+local last_ir_light_object = nil
+
+-- Shared status flag used by optional compatibility patches.
+-- This avoids other scripts directly loading or calling this addon.
+_G.utlf_weapon_ir_active = false
+
+local function framework_ready()
+    return utlf_core ~= nil
+        and utlf_lights ~= nil
+        and type(utlf_core.get_state) == "function"
+        and type(utlf_core.active_supported_weapon) == "function"
+        and type(utlf_lights.attach_light) == "function"
+        and type(utlf_lights.detach_current_light) == "function"
+end
+
+local function get_mcm_value(paths, fallback)
+    if ui_mcm == nil or ui_mcm.get == nil then
+        return fallback
+    end
+
+    for _, path in ipairs(paths) do
+        local value = ui_mcm.get(path)
+        if value ~= nil then
+            return value
+        end
+    end
+
+    return fallback
+end
+
+local function get_ir_key()
+    return tonumber(get_mcm_value({
+        "utlf/ir_mode/toggle_key",
+        "utlf/ir_mode/ir_toggle_key",
+        "utlf_ir_mode/toggle_key",
+    }, DEFAULT_IR_KEY)) or DEFAULT_IR_KEY
+end
+
+local function get_ir_modifier()
+    return tonumber(get_mcm_value({
+        "utlf/ir_mode/toggle_modifier",
+        "utlf/ir_mode/ir_toggle_modifier",
+        "utlf_ir_mode/toggle_modifier",
+    }, DEFAULT_IR_MODIFIER)) or DEFAULT_IR_MODIFIER
+end
+
+local function dik_pressed(left, right)
+    return (key_state(left) or 0) ~= 0
+        or (key_state(right) or 0) ~= 0
+end
+
+local function configured_modifier_pressed(modifier)
+    modifier = tonumber(modifier) or 0
+
+    local shift = dik_pressed(DIK_keys.DIK_LSHIFT, DIK_keys.DIK_RSHIFT)
+    local ctrl = dik_pressed(DIK_keys.DIK_LCONTROL, DIK_keys.DIK_RCONTROL)
+    local alt = dik_pressed(DIK_keys.DIK_LMENU, DIK_keys.DIK_RMENU)
+
+    if modifier == 1 then
+        return shift
+    elseif modifier == 2 then
+        return ctrl
+    elseif modifier == 3 then
+        return alt
+    end
+
+    return not (shift or ctrl or alt)
+end
+
+local function get_nv_state()
+    return item_device ~= nil
+        and item_device.nv_state == true
+end
+
+local function has_equipped_nvgs()
+    if db.actor == nil or ini_sys == nil then
+        return false
+    end
+
+    for slot = 0, 15 do
+        local item = db.actor:item_in_slot(slot)
+        if item then
+            local section = item:section()
+            if section and ini_sys:r_string_ex(section, "nv_effect") ~= nil then
+                return true
+            end
+        end
+    end
+
+    return false
+end
+
+local function play_toggle_sound(enabled)
+    if db.actor == nil then
+        return
+    end
+
+    snd_tactical_light.frequency = enabled and 1.15 or 0.85
+    snd_tactical_light:play(db.actor, 0, sound_object.s2d)
+end
+
+local function current_state()
+    if not framework_ready() then
+        return nil
+    end
+
+    return utlf_core.get_state()
+end
+
+
+-- Separate IR settings are keyed by the attached modular flashlight section.
+-- The normal UTLF profile is never modified.
+--
+-- This table is only a startup fallback. The authoritative copy is stored in
+-- alife_storage_manager, which is serialized into the player's save.
+local session_ir_settings = {}
+local STORAGE_KEY = "utlf_ir_mode_flashlight_settings"
+
+local function clamp(value, fallback, minimum, maximum)
+    value = tonumber(value) or fallback
+
+    if value < minimum then
+        return minimum
+    elseif value > maximum then
+        return maximum
+    end
+
+    return value
+end
+
+local function get_persistent_settings(create)
+    if not alife_storage_manager
+    or type(alife_storage_manager.get_state) ~= "function" then
+        return nil
+    end
+
+    local ok, state = pcall(alife_storage_manager.get_state)
+
+    if not ok or type(state) ~= "table" then
+        return nil
+    end
+
+    local settings = state[STORAGE_KEY]
+
+    if type(settings) ~= "table" and create then
+        settings = {}
+        state[STORAGE_KEY] = settings
+    end
+
+    return settings
+end
+
+local function persistent_read(section, field, fallback)
+    local settings = get_persistent_settings(false)
+    local saved = settings and settings[section]
+
+    if type(saved) == "table" and saved[field] ~= nil then
+        local value = tonumber(saved[field])
+
+        if value ~= nil then
+            -- Mirror loaded values into the session cache.
+            session_ir_settings[section] =
+                session_ir_settings[section] or {}
+            session_ir_settings[section][field] = value
+
+            return value
+        end
+    end
+
+    local cached = session_ir_settings[section]
+
+    if cached and cached[field] ~= nil then
+        return cached[field]
+    end
+
+    return fallback
+end
+
+local function persistent_write(section, field, value)
+    value = tonumber(value)
+
+    if value == nil then
+        return false
+    end
+
+    session_ir_settings[section] =
+        session_ir_settings[section] or {}
+    session_ir_settings[section][field] = value
+
+    local settings = get_persistent_settings(true)
+
+    if not settings then
+        printf(
+            "[utlf_ir_mode] persistent storage unavailable; cached %s/%s for session",
+            tostring(section),
+            tostring(field)
+        )
+        return false
+    end
+
+    settings[section] = settings[section] or {}
+    settings[section][field] = value
+
+    return true
+end
+
+local function preload_saved_settings()
+    local settings = get_persistent_settings(false)
+
+    if type(settings) ~= "table" then
+        return
+    end
+
+    session_ir_settings = {}
+
+    for section, values in pairs(settings) do
+        if type(section) == "string" and type(values) == "table" then
+            session_ir_settings[section] = {
+                range = tonumber(values.range),
+                cone_deg = tonumber(values.cone_deg),
+                brightness = tonumber(values.brightness),
+            }
+        end
+    end
+
+    printf("[utlf_ir_mode] loaded saved per-flashlight IR settings")
+end
+
+local function copy_table(source)
+    local result = {}
+
+    for key, value in pairs(source or {}) do
+        if type(value) == "table" then
+            result[key] = copy_table(value)
+        else
+            result[key] = value
+        end
+    end
+
+    return result
+end
+
+local function profile_defaults(profile)
+    return {
+        range = tonumber(profile and profile.range) or 30,
+        cone_deg = tonumber(profile and profile.cone_deg) or 50,
+        brightness = 1.0,
+    }
+end
+
+function get_ir_settings(light_section, profile)
+    if not light_section then
+        return nil
+    end
+
+    local defaults = profile_defaults(profile)
+
+    return {
+        section = light_section,
+        range = clamp(
+            persistent_read(light_section, "range", defaults.range),
+            defaults.range,
+            5,
+            100
+        ),
+        cone_deg = clamp(
+            persistent_read(light_section, "cone_deg", defaults.cone_deg),
+            defaults.cone_deg,
+            8,
+            120
+        ),
+        brightness = clamp(
+            persistent_read(light_section, "brightness", defaults.brightness),
+            defaults.brightness,
+            0.25,
+            2.00
+        ),
+        default_range = defaults.range,
+        default_cone_deg = defaults.cone_deg,
+        default_brightness = defaults.brightness,
+    }
+end
+
+function set_ir_settings(light_section, range, cone_deg, brightness)
+    if not light_section then
+        return false
+    end
+
+    local weapon, profile = utlf_core.active_supported_weapon()
+    local defaults = profile_defaults(profile)
+
+    local saved_range = clamp(range, defaults.range, 5, 100)
+    local saved_cone = clamp(cone_deg, defaults.cone_deg, 8, 120)
+    local saved_brightness = clamp(
+        brightness,
+        defaults.brightness,
+        0.25,
+        2.00
+    )
+
+    persistent_write(light_section, "range", saved_range)
+    persistent_write(light_section, "cone_deg", saved_cone)
+    persistent_write(light_section, "brightness", saved_brightness)
+
+    printf(
+        "[utlf_ir_mode] saved IR settings for %s: range=%s cone=%s brightness=%s",
+        tostring(light_section),
+        tostring(saved_range),
+        tostring(saved_cone),
+        tostring(saved_brightness)
+    )
+
+    return true
+end
+
+function reset_ir_settings(light_section, profile)
+    if not light_section then
+        return false
+    end
+
+    local defaults = profile_defaults(profile)
+
+    persistent_write(light_section, "range", defaults.range)
+    persistent_write(light_section, "cone_deg", defaults.cone_deg)
+    persistent_write(light_section, "brightness", defaults.brightness)
+
+    return true
+end
+
+function get_active_ir_context()
+    if not framework_ready() then
+        return nil
+    end
+
+    local weapon, profile = utlf_core.active_supported_weapon()
+    if not weapon or not profile then
+        return nil
+    end
+
+    -- Modular UTLF profiles store settings per attached flashlight section.
+    -- Integrated/non-modular UTLF profiles have no saved modular attachment,
+    -- so use the weapon section as a stable per-weapon settings identity.
+    local saved = nil
+    local is_modular =
+        type(utlf_core.is_modular_profile) == "function"
+        and utlf_core.is_modular_profile(profile)
+
+    if is_modular
+    and type(utlf_core.saved_modular_light) == "function" then
+        saved = utlf_core.saved_modular_light(weapon)
+    end
+
+    local settings_section =
+        saved and saved.section
+        or weapon:section()
+
+    if not settings_section then
+        return nil
+    end
+
+    return {
+        weapon = weapon,
+        profile = profile,
+        light_section = settings_section,
+        settings_section = settings_section,
+        is_modular = is_modular,
+        has_attached_modular_light =
+            saved ~= nil and saved.section ~= nil,
+        settings = get_ir_settings(settings_section, profile),
+    }
+end
+
+local function scaled_ir_color(profile, brightness)
+    local source = profile and profile.color
+    local multiplier = tonumber(brightness) or 1.0
+
+    if type(source) ~= "table" then
+        source = { 1.0, 0.94, 0.78, 0.55 }
+    end
+
+    return {
+        (tonumber(source[1]) or 1.0) * multiplier,
+        (tonumber(source[2]) or 0.94) * multiplier,
+        (tonumber(source[3]) or 0.78) * multiplier,
+        (tonumber(source[4]) or 0.55) * multiplier,
+    }
+end
+
+local function build_ir_profile(profile, light_section)
+    local ir_profile = copy_table(profile)
+    local settings = get_ir_settings(light_section, profile)
+
+    if settings then
+        ir_profile.range = settings.range
+        ir_profile.cone_deg = settings.cone_deg
+        ir_profile.color = scaled_ir_color(profile, settings.brightness)
+    end
+
+    return ir_profile
+end
+
+local function detach_ir_light(reason)
+    local state = current_state()
+    if not state then
+        return
+    end
+
+    state.desired_on = false
+    utlf_core.clear_replacement()
+    utlf_lights.detach_current_light(reason)
+    _G.utlf_weapon_ir_active = false
+    last_ir_light_object = nil
+end
+
+local function attach_ir_light(reason)
+    if not framework_ready() then
+        return false
+    end
+
+    if not has_equipped_nvgs() or not get_nv_state() then
+        return false
+    end
+
+    local weapon, profile = utlf_core.active_supported_weapon()
+    if not weapon or not profile then
+        return false
+    end
+
+    if weapon:get_state() ~= 0 then
+        return false
+    end
+
+    local saved = nil
+
+    if utlf_core.is_modular_profile(profile) then
+        saved = utlf_core.saved_modular_light(weapon)
+
+        if not saved or not saved.section then
+            printf("[utlf_ir_mode] no modular tactical light attached to %s", weapon:section())
+            return false
+        end
+    end
+
+    local light_section = saved and saved.section or weapon:section()
+    local ir_profile = build_ir_profile(profile, light_section)
+
+    local state = utlf_core.get_state()
+    state.desired_on = true
+    utlf_core.clear_replacement()
+    utlf_lights.attach_light(weapon, ir_profile, reason or "IR mode")
+
+    local active = state.light ~= nil
+    _G.utlf_weapon_ir_active = active
+
+    -- UTLF creates a new engine light object each time IR is enabled.
+    -- Reapply this flashlight's saved IR-only values to that new object.
+    if active
+    and type(apply_active_ir_settings) == "function" then
+        apply_active_ir_settings()
+
+        local context = get_active_ir_context()
+        last_ir_light_section =
+            context and context.light_section or light_section
+        last_ir_light_object = state.light
+    end
+
+    return active
+end
+
+-- Rebuilds only the active IR light after GUI settings change.
+-- This does not play the toggle sound and does not alter white-light settings.
+local function color_components(color)
+    if type(color) ~= "table" then
+        return 1.0, 0.94, 0.78
+    end
+
+    local r = tonumber(color[1] or color.r or color.x) or 1.0
+    local g = tonumber(color[2] or color.g or color.y) or 0.94
+    local b = tonumber(color[3] or color.b or color.z) or 0.78
+
+    return r, g, b
+end
+
+-- Applies saved IR values directly to the existing engine light.
+-- No detach/reattach cycle is used.
+function apply_active_ir_settings()
+    if not ir_requested
+    or not has_equipped_nvgs()
+    or not get_nv_state() then
+        return false
+    end
+
+    local context = get_active_ir_context()
+    local state = current_state()
+
+    if not context
+    or not context.settings
+    or not state
+    or not state.light then
+        return false
+    end
+
+    local settings = context.settings
+    local light = state.light
+
+    -- Update the active UTLF light in place. Detaching and reattaching here
+    -- causes UTLF's own update cycle to restore the old profile, which made
+    -- every GUI slider appear ineffective.
+    light.range = tonumber(settings.range) or 30
+
+    if type(light.set_cone) == "function" then
+        light:set_cone(
+            math.rad(tonumber(settings.cone_deg) or 50)
+        )
+    end
+
+    local source = context.profile and context.profile.color
+    local r, g, b = color_components(source)
+    local a = 0.55
+
+    if type(source) == "table" then
+        a = tonumber(source[4] or source.a or source.w) or a
+    end
+
+    local brightness = tonumber(settings.brightness) or 1.0
+    local color = fcolor()
+
+    light.color = color:set(
+        r * brightness,
+        g * brightness,
+        b * brightness,
+        a * brightness
+    )
+
+    last_ir_light_section = context.light_section
+    last_ir_light_object = light
+
+    printf(
+        "[utlf_ir_mode] applied live IR settings: identity=%s range=%s cone=%s brightness=%s",
+        tostring(context.light_section),
+        tostring(settings.range),
+        tostring(settings.cone_deg),
+        tostring(settings.brightness)
+    )
+
+    return true
+end
+
+-- Retained for compatibility with older GUI builds.
+function refresh_active_ir_light(reason)
+    return apply_active_ir_settings()
+end
+
+local function disable_ir_mode(reason)
+    if not ir_requested then
+        return false
+    end
+
+    ir_requested = false
+    previous_nv_state = nil
+    detach_ir_light(reason or "IR mode disabled")
+    printf("[utlf_ir_mode] IR mode disabled")
+    return true
+end
+
+local function enable_ir_mode()
+    if not framework_ready() then
+        printf("[utlf_ir_mode] compatible modular UTLF framework not available")
+        return false
+    end
+
+    if not has_equipped_nvgs() then
+        printf("[utlf_ir_mode] IR toggle ignored: no compatible NVGs equipped")
+        return false
+    end
+
+    local weapon, profile = utlf_core.active_supported_weapon()
+    if not weapon or not profile then
+        printf("[utlf_ir_mode] IR toggle ignored: no supported weapon active")
+        return false
+    end
+
+    if utlf_core.is_modular_profile(profile) then
+        local saved = utlf_core.saved_modular_light(weapon)
+
+        if not saved or not saved.section then
+            printf(
+                "[utlf_ir_mode] IR toggle ignored: no modular flashlight attached to %s",
+                tostring(weapon:section())
+            )
+            return false
+        end
+    end
+
+    ir_requested = true
+    previous_nv_state = get_nv_state()
+
+    -- The old headlamp behavior synchronizes the existing light directly
+    -- to the deployed NVG state.
+    if previous_nv_state then
+        if attach_ir_light("IR mode enabled") then
+            printf("[utlf_ir_mode] IR mode enabled")
+        else
+            ir_requested = false
+            previous_nv_state = nil
+            printf("[utlf_ir_mode] IR enable failed")
+            return false
+        end
+    else
+        detach_ir_light("IR mode armed with NVGs raised")
+        printf("[utlf_ir_mode] IR mode armed; deploy NVGs to activate")
+    end
+
+    return true
+end
+
+local function toggle_ir_mode()
+    if ir_requested then
+        return disable_ir_mode("IR manual toggle")
+    end
+
+    return enable_ir_mode()
+end
+
+local function normal_utlf_key_pressed(key)
+    if not framework_ready() then
+        return false
+    end
+
+    local settings = utlf_core.get_settings()
+    if not settings then
+        return false
+    end
+
+    return key == settings.toggle_key
+        and configured_modifier_pressed(settings.toggle_modifier)
+end
+
+local function on_before_key_press(key, bind, dis, flags)
+    -- Using the normal UTLF bind always exits IR mode, but does not consume
+    -- or alter the framework's original keypress.
+    if normal_utlf_key_pressed(key) then
+        ir_requested = false
+        previous_nv_state = nil
+        return
+    end
+
+    if key ~= get_ir_key()
+    or not configured_modifier_pressed(get_ir_modifier()) then
+        return
+    end
+
+    if key_down then
+        return
+    end
+    key_down = true
+
+    if flags then
+        flags.ret_value = false
+    end
+
+    if device():is_paused() or not actor_menu.is_hud_free() then
+        return
+    end
+
+    -- Only play the switch sound when the requested toggle succeeds.
+    -- This prevents sound when no supported flashlight is available.
+    local enabling = not ir_requested
+
+    if toggle_ir_mode() then
+        play_toggle_sound(enabling)
+    end
+end
+
+local function on_before_key_release(key, bind, dis, flags)
+    if key ~= get_ir_key() then
+        return
+    end
+
+    -- Only consume the release if this addon actually claimed the matching
+    -- key press. This allows the same base key to remain usable by the normal
+    -- torch/headlamp when the IR action requires a modifier (for example
+    -- Ctrl + L).
+    if not key_down then
+        return
+    end
+
+    key_down = false
+
+    if flags then
+        flags.ret_value = false
+    end
+end
+
+local function actor_on_update()
+    if not ir_requested then
+        return
+    end
+
+    if not framework_ready() then
+        ir_requested = false
+        previous_nv_state = nil
+        return
+    end
+
+    if db.actor == nil or item_device == nil then
+        return
+    end
+
+    if not has_equipped_nvgs() then
+        disable_ir_mode("IR NVGs removed")
+        return
+    end
+
+    local current_nv_state = get_nv_state()
+
+    if previous_nv_state == nil then
+        previous_nv_state = current_nv_state
+    end
+
+    if current_nv_state ~= previous_nv_state then
+        previous_nv_state = current_nv_state
+
+        if current_nv_state then
+            attach_ir_light("IR NVGs deployed")
+        else
+            detach_ir_light("IR NVGs raised")
+        end
+
+        return
+    end
+
+    -- Restore the light if UTLF rebuilt/replaced the weapon while IR is active.
+    local state = utlf_core.get_state()
+
+    if current_nv_state and not state.light then
+        attach_ir_light("IR state restore")
+        return
+    elseif not current_nv_state and state.light then
+        detach_ir_light("IR NVGs raised")
+        return
+    end
+
+    -- UTLF may replace the active engine light when the modular flashlight
+    -- attachment changes. Detect both the attachment section and the actual
+    -- light object so the new flashlight immediately receives its own saved
+    -- IR-only range, cone, and brightness values.
+    if current_nv_state and state.light then
+        local context = get_active_ir_context()
+        local current_section =
+            context and context.light_section or nil
+
+        local attachment_changed =
+            current_section ~= last_ir_light_section
+
+        local light_object_changed =
+            not rawequal(state.light, last_ir_light_object)
+
+        if attachment_changed or light_object_changed then
+            if type(apply_active_ir_settings) == "function" then
+                apply_active_ir_settings()
+            end
+
+            last_ir_light_section = current_section
+            last_ir_light_object = state.light
+
+            printf(
+                "[utlf_ir_mode] reapplied IR settings after light change: %s",
+                tostring(current_section)
+            )
+        end
+    end
+end
+
+local function actor_on_first_update()
+    ir_requested = false
+    previous_nv_state = has_equipped_nvgs() and get_nv_state() or nil
+    key_down = false
+    last_ir_light_section = nil
+    last_ir_light_object = nil
+    _G.utlf_weapon_ir_active = false
+
+    preload_saved_settings()
+end
+
+function on_game_start()
+    RegisterScriptCallback("on_before_key_press", on_before_key_press)
+    RegisterScriptCallback("on_before_key_release", on_before_key_release)
+    RegisterScriptCallback("actor_on_update", actor_on_update)
+    RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
+
+    printf("[utlf_ir_mode] standalone modular addon loaded")
+end
+
+-- Public compatibility API for addons that explicitly query this script.
+function is_ir_active()
+    return _G.utlf_weapon_ir_active == true
+end

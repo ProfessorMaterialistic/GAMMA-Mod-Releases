@@ -1,24 +1,17 @@
-# Compatibility and dependencies — 2.1.2
+# Compatibility and dependencies — 2.2.0
 
-## Current acceptance and supported scope
+Owner-confirmed on the matched rc.7 pair in the existing GAMMA setup. The accepted
+selection uses Soy Adjustable Headlamps 1.0, Laser Settings 2.7, UTLF 1.0.2 plus
+Soy UTLF IR 1.03, and Soy IR Headlamps 1.3.0 with its NVG illuminator. GAMMA and
+MCM are required. Install selected dependencies separately; use matching FOMOD
+choices in both Light mods. Native/G2X and standalone combinations retain local
+regression coverage but are not newly claimed as separately gameplay-tested.
 
-The owner accepted the matched 2.1.2 RC pair in the existing GAMMA setup.
-The ADS correction covers equipped weapons using aim-start/end states;
-genuine suspension and absent attachments still suppress output.
-No specific headlamp reactivation fix is claimed. See RELEASE-NOTES.md.
-
-
-Official UTLF v1.0.2 (`d8c89c385ece3fbfd10e50c054b4618bc3f09d38`)
-is the supported tactical-light integration. Its new HUD and light-pose modules
-remain owned by the framework; obsolete replacement machinery is not bundled.
-The owner confirmed the exact RC pair working in the current GAMMA setup. No
-new engine build is supplied or universal host/weapon certification asserted.
-
-43 focused local groups cover controls, routing, policies, family persistence,
-firing, battery pause and mocked recovery. Real clone attachment/battery transfer,
-all magnifier variants and rendered beam continuity remain accepted limitations.
-Install selected dependencies separately. Core controls work without optional
-integrations; do not select a FOMOD integration when its dependency is absent.
+OFF/ON/AUTO, NVG routing, battery and equipment gates remain unchanged. Missing
+IR equipment fails dark. There is no supported IR-laser implementation. No custom
+engine binary is supplied. Exact magnifier variants, clone attachment/battery
+transfer and every possible mod-stack interaction are not universally certified.
+Existing later compatibility patches keep their order.
 
 ## Historical 2.1.0 engine baseline
 

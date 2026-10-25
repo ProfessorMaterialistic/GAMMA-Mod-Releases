@@ -1,0 +1,174 @@
+-- Ephemeral output lease. Saved OFF/ON/AUTO and per-instance intent never change.
+-- Controllers remain the only physical owners; this module supplies an override.
+local active,last_update
+local presets={
+    cqb_white={route="utlf_visible"},
+    cqb_ir={route="utlf_ir"},
+    cqb_white_laser={route="utlf_visible",laser=true},
+    cqb_ir_laser={route="utlf_ir",laser=true,infrared=true},
+    momentary_laser={laser=true},
+    momentary_linked={linked=true,hold_only=true},
+    momentary_linked_laser={linked=true,laser=true,hold_only=true}
+}
+-- Resolve once at the hold threshold. A later NVG change invalidates the lease rather than
+-- changing its route or the user's saved linking preference.
+local function preset_route(preset)
+    if preset.linked then return light_backends.nv() and "utlf_ir" or "utlf_visible" end
+    return preset.route
+end
+local function controller() return light_compat.module("unified_lights") end
+local function laser_api() return light_compat.module("zzz_bas_laser_control") end
+local function usable()
+    return db and db.actor and db.actor:alive() and not device():is_paused()
+        and actor_menu.is_hud_free()
+end
+function known(id) return presets[id]~=nil end
+function label(id) return light_compat.action_name(id) end
+function momentary_label(id)
+    return id=="cqb_white_laser" and label("momentary_linked_laser") or label(id)
+end
+function available(id)
+    local preset=presets[id]
+    if not preset or not light_backends.weapon() then return false end
+    local route=preset_route(preset)
+    if route and not light_backends.equipped(route) then return false end
+    if preset.laser and not light_backends.equipped("laser") then return false end
+    if preset.infrared then
+        -- Laser Settings exposes a visible shader, not a reversible IR emitter.
+        -- Add a verified adapter here before enabling this reserved preset.
+        return false
+    end
+    return true
+end
+function choices(momentary)
+    local result={}
+    -- Momentary controls expose one stable, concise list. Legacy radial/toggle
+    -- presets remain available through their original IDs and capability gates.
+    local order=momentary and {"momentary_linked","cqb_white_laser","momentary_laser","cqb_white","cqb_ir"}
+        or {"cqb_white","cqb_ir","cqb_white_laser","cqb_ir_laser","momentary_laser"}
+    for _,id in ipairs(order) do
+        if momentary or available(id) then
+            result[#result+1]={id=id,name=momentary and momentary_label(id) or label(id)}
+        end
+    end
+    return result
+end
+function current() return active and active.id end
+local function valid_context()
+    if not active or not usable() then return false end
+    local weapon=light_backends.weapon()
+    local _,_,attachment=light_backends.context()
+    return weapon and weapon:id()==active.weapon_id and weapon:section()==active.section
+        and attachment==active.attachment and light_backends.nv()==active.nv
+        and available(active.id) and (not active.route or light_backends.can_emit(active.route))
+        and (not active.laser or light_backends.can_emit("laser"))
+end
+function weapon_route() return valid_context() and active.route or nil end
+function mode(id)
+    if not valid_context() then return end
+    if id=="laser" and active.laser then return 1 end
+    if active.route then
+        if id=="weapon_situational" then return 1 end
+        if id=="utlf_visible" or id=="utlf_ir" then return active.route==id and 1 or 0 end
+    end
+end
+local function reconcile()
+    local api=controller()
+    if api then api.reconcile(nil,false)
+    else
+        local standalone=light_compat.module("one_key_lights_standalone")
+        if standalone then standalone.refresh_output() end
+    end
+end
+local function momentary_output(lease)
+    if not lease.token then return end
+    local output={}
+    if lease.route then
+        output.route=light_backends.emitting("utlf_ir") and "utlf_ir" or "utlf_visible"
+        output.weapon=light_backends.emitting(output.route)
+    end
+    if lease.laser then output.laser=light_backends.emitting("laser") end
+    return output
+end
+local function momentary_feedback(lease,before)
+    if not before then return end
+    local after=momentary_output(lease)
+    -- The temporary overlay never changes saved intent, so normal command
+    -- feedback cannot see it. Present only completed physical transitions,
+    -- using the existing sound owners without adding a camera animation.
+    if lease.route and (before.weapon~=after.weapon or after.weapon and before.route~=after.route) then
+        light_backends.feedback(after.weapon and after.route or before.route,after.weapon,false)
+    end
+    if lease.laser and before.laser~=after.laser then
+        light_backends.feedback("laser",after.laser,false)
+    end
+end
+function cancel(reason,defer)
+    if not active then return false end
+    local lease=active
+    -- Automatic context cancellation keeps its original feedback policy. Only
+    -- a release in the same usable context presents this manual restoration.
+    local before=reason=="release" and not defer and valid_context() and momentary_output(lease)
+    active=nil;last_update=nil
+    -- Turning routes off before restoration prevents white/IR overlap. The
+    -- controller re-evaluates current equipment/power, never the old weapon.
+    light_backends.set("utlf_ir",false)
+    light_backends.set("utlf_visible",false)
+    local laser=laser_api()
+    if laser and laser.light_tactical_clear then laser.light_tactical_clear() end
+    if not defer and db and db.actor and db.actor:alive() then reconcile() end
+    momentary_feedback(lease,before)
+    return true
+end
+function begin(id,token)
+    cancel("replacement")
+    if not usable() or not available(id) then return false end
+    local preset=presets[id]
+    if preset.hold_only and token==nil then return false end
+    local route=preset_route(preset)
+    local api=controller()
+    -- A white preset must never override the owner's NVG-linked dark route.
+    if route=="utlf_visible" and light_backends.nv() and api and api.get_linked("weapon") then return false end
+    if route and not light_backends.can_emit(route) then return false end
+    if preset.laser and not light_backends.can_emit("laser") then return false end
+    if api then api.reconcile(nil,false)
+    else
+        local standalone=light_compat.module("one_key_lights_standalone")
+        if standalone then standalone.refresh_output() end
+    end -- seed legacy intent BEFORE overlay
+    local _,_,attachment=light_backends.context()
+    local weapon=light_backends.weapon()
+    local lease={id=id,token=token,weapon_id=weapon:id(),section=weapon:section(),attachment=attachment,
+        nv=light_backends.nv(),route=route,laser=preset.laser}
+    local before=momentary_output(lease)
+    active=lease
+    last_update=time_continual and time_continual() or time_global()
+    reconcile()
+    momentary_feedback(lease,before)
+    return true
+end
+function release(token)
+    if active and active.token==token then return cancel("release") end
+    return false
+end
+function toggle(id)
+    if active and active.id==id then return cancel("toggle") end
+    return begin(id,nil)
+end
+function update()
+    if not active then return end
+    local now=time_continual and time_continual() or time_global()
+    if last_update and (now<last_update or now-last_update>1000) then cancel("stalled input");return end
+    last_update=now
+    if not valid_context() then cancel("context changed") end
+end
+function on_game_start()
+    RegisterScriptCallback("actor_on_update",update)
+    RegisterScriptCallback("on_option_change",function() cancel("settings") end)
+    RegisterScriptCallback("save_state",function() cancel("save") end)
+    RegisterScriptCallback("load_state",function() cancel("load",true) end)
+    RegisterScriptCallback("on_game_load",function() cancel("level",true) end)
+    for _,event in ipairs({"ActorMenu_on_before_init_mode","main_menu_on_init","actor_on_before_death","actor_on_net_destroy","on_before_level_changing"}) do
+        RegisterScriptCallback(event,function() cancel(event,true) end)
+    end
+end

@@ -1,0 +1,88 @@
+-- Keep the familiar pages and control names. Integrate additions into their
+-- related sections without changing saved IDs, callbacks or native geometry.
+local function index(rows)
+    local result={}
+    for _,row in ipairs(rows) do result[row.id]=row end
+    return result
+end
+local function title(rows,id,text) rows[#rows+1]={id=id,type="title",text=text} end
+local function help(rows,id,text) rows[#rows+1]={id=id,type="desc",text=text} end
+local function add(rows,source,id,caption,hint)
+    local row=assert(source[id],"Missing Light option: "..id)
+    if caption then row.caption=caption;row.ui_hook_functor=nil end
+    if hint then row.hint=hint end
+    rows[#rows+1]=row
+    return row
+end
+
+function organize(controls,menu,binding)
+    local c,m=index(controls),index(menu)
+    local clean,radial={},{}
+    -- These are the original main rows, in their original order.
+    for _,id in ipairs({"general","enabled","key","linking","link_weapon","link_head","link_help","gestures","tap","double","hold","double_ms","hold_ms","gesture_behavior"}) do
+        if c[id] then add(clean,c,id) end
+        if id=="hold" then add(clean,c,"momentary_none","Momentary Hold","light_held") end
+    end
+    c.link_help.text="Headlamp and Weapon Light automatically select White or IR according to Light Linking."
+    c.double_ms.caption="Double Tap Window (ms)";c.hold_ms.caption="Hold Threshold (ms)"
+    c.tap.caption="Tap";c.double.caption="Double Tap";c.hold.caption="Hold"
+    c.tap.hint="light_tap";c.double.hint="light_double";c.hold.hint="light_hold"
+    help(clean,"gesture_help","Momentary Hold starts at the Hold Threshold and restores previous lighting on release. It replaces only Hold; Tap and Double Tap remain available. Choose None to use normal Hold.")
+    -- Preserve the old saved option for migration without a second master toggle.
+    c.matrix_enabled.precondition={function() return false end}
+    add(clean,c,"matrix_enabled")
+    help(clean,"matrix_help","Enable each modifier separately. Apply and reopen Controls to show or hide its bindings. Disabled groups keep their saved actions. Use one modifier at a time.")
+    for _,modifier in ipairs({{"alt","Alt"},{"ctrl","Ctrl"},{"shift","Shift"}}) do
+        title(clean,"group_"..modifier[1],string.upper(modifier[2]).." + LIGHT KEY")
+        add(clean,c,"enable_"..modifier[1],"Enable "..modifier[2].." Actions","light_modifiers")
+        for _,gesture in ipairs({{"tap","Tap"},{"double","Double Tap"},{"hold","Hold"}}) do
+            local row=add(clean,c,modifier[1].."_"..gesture[1],gesture[2],"light_"..gesture[1])
+            row.precondition={one_key_lights_mcm.modifier_enabled,modifier[1]}
+        end
+        local row=add(clean,c,"momentary_"..modifier[1],"Momentary Hold","light_held")
+        row.precondition={one_key_lights_mcm.modifier_enabled,modifier[1]}
+    end
+    help(clean,"temporary_help","Temporary actions restore your previous lighting on release or cancellation. Weapon Light follows your NVGs; White Light and IR select a specific light. Changing NVG state cancels the hold; release and hold again.")
+    -- Removed choices must not silently erase an old saved binding. Native lists
+    -- display None for an absent ID; explicitly identify that legacy assignment.
+    for _,modifier in ipairs({"none","alt","ctrl","shift"}) do
+        for _,gesture in ipairs({"tap","double"}) do
+            local id=modifier=="none" and gesture or modifier.."_"..gesture
+            local saved=axr_main.config:r_value("mcm",one_key_lights_mcm.path(id),0)
+            if saved and light_tactical.known(saved) then
+                help(clean,"legacy_"..id,"Saved "..(modifier=="none" and "" or modifier.." + ")..(gesture=="tap" and "Tap" or "Double Tap")..": "..light_tactical.label(saved)..". This legacy binding remains active until you choose a new action.")
+            end
+        end
+    end
+    add(clean,c,"conflicts")
+    -- Restore the original Quick Menu, Appearance and Icons & Labels sections.
+    local groups={
+        {"QUICK MENU",{"menu_key","menu_selection","shortcut","modifier","radial_behavior","right_click","allow_movement","hide_bound"}},
+        {"APPEARANCE",{"radial_theme","menu_size","menu_opacity"}},
+        {"ICONS & LABELS",{"radial_labels","icon_style","indicator_style","show_battery","show_locks","battery_color"}}
+    }
+    for i,group in ipairs(groups) do
+        title(radial,"section_"..i,group[1])
+        for _,id in ipairs(group[2]) do add(radial,m,id) end
+        if i==2 then
+            add(radial,m,"custom_accent","Use Custom Accent Color")
+            for _,entry in ipairs({{"r","Red"},{"g","Green"},{"b","Blue"}}) do add(radial,m,"accent_"..entry[1],"Accent "..entry[2]) end
+        end
+    end
+    title(radial,"visible_actions","QUICK MENU ACTIONS")
+    help(radial,"layout_help","Show chooses which actions appear. Position sets clockwise order: 1 comes first. The menu fits five actions. Linked lights use the White light's position and icon.")
+    for _,id in ipairs(one_key_lights_radial.actions) do
+        local key="show_"..id
+        if not m[key] then m[key]={id=key,type="check",val=1,def={one_key_lights_mcm.legacy_default,key,1}} end
+        add(radial,m,key,"Show "..light_compat.action_name(id))
+        add(radial,m,"position_"..id,light_compat.action_name(id).." - Position")
+        add(radial,m,"icon_"..id,light_compat.action_name(id).." - Icon")
+    end
+    help(radial,"ir_laser_help","IR Laser is not supported by the installed Laser Settings mod. The IR + IR Laser action cannot be used yet.")
+    title(radial,"profiles","SAVED QUICK MENUS")
+    add(radial,m,"radial_profile","Profile Slot")
+    m.radial_profile.content={{1,"Profile 1"},{2,"Profile 2"},{3,"Profile 3"}}
+    add(radial,m,"save_profile","Save Profile");add(radial,m,"load_profile","Load Profile")
+    help(radial,"profile_help","Save stores this Quick Menu's look and layout in the selected slot. Load brings it back; Apply keeps it and Cancel discards it. Your key bindings are not changed.")
+    return clean,radial,binding
+end

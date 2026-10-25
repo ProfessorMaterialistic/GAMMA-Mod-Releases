@@ -1,12 +1,11 @@
-# One Key Light 2.1.2
+# One Key Light 2.2.0
 
-One-key Tap / Double Tap / Hold controls and a radial quick menu for your
-installed lights. Works independently; add Unified for AUTO and NVG linking.
+One-key light gestures, Momentary Hold and a configurable Quick Menu.
 
-Weapon-light ADS transition hotfix, promoted from the owner-accepted RC.
+Owner-confirmed on the matched rc.7 pair; stable gameplay code is unchanged.
 
 ## Download
 
-[Release and .7z download](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/releases/tag/one-key-light-v2.1.2).
+[Release and .7z download](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/releases/tag/one-key-light-v2.2.0).
 
-[Features](FEATURES.md) · [Installation/rollback](INSTALL.md) · [Dependencies and limits](COMPATIBILITY.md) · [Release notes](RELEASE-NOTES.md) · [Credits](CREDITS.md) · [Licenses](LICENSE-NOTICES.md)
+[Features](FEATURES.md) · [Installation](INSTALL.md) · [Requirements](COMPATIBILITY.md) · [Release notes](RELEASE-NOTES.md) · [Credits](CREDITS.md) · [Licenses](LICENSE-NOTICES.md)

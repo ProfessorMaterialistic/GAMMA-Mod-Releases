@@ -1,26 +1,16 @@
-# Modified-source disclosure — October 19, 2026
+# Modified source — Light 2.2.0
 
-For 2.1.2, Bling / ProfessorMaterialistic adds the named aim-start (11)
-and aim-end (12) states to the maintained Light backend's weapon-emission
-eligibility. Existing idle/fire/fire2 eligibility is preserved. No new
-upstream input, animation/camera modification or third-party artwork.
-Stable promotion changes only labels and documentation from the accepted RC.
+Bling / ProfessorMaterialistic maintains the Light controls, shared compatibility
+adapters, tactical temporary-state module and original radial artwork. Original
+upstream authors retain their credits and copyrights.
 
-Earlier modification disclosure follows:
+2.2 adds grouped modifier gestures, threshold-based Momentary Hold, persistent
+Tap/Double availability, temporary restoration and sound feedback, radial profiles
+and presentation choices. The Laser Settings slot handler uses its existing setter
+so its cached output flag matches OFF commands. Optional diagnostics observe
+bounded output state without changing saved intent or shader settings.
 
-# Modified-source disclosure — October 14, 2026
-
-Bling / ProfessorMaterialistic maintains One Key gesture/radial/standalone
-controls and Unified authoritative modes, AUTO policies, persistence and linking.
-Physical device ownership and original upstream contributors remain credited.
-
-For 2.1.1, UTLF input/battery/item integration patches are rebased onto official
-v1.0.2. Obsolete clear_replacement calls and old battery transfer bookkeeping
-are removed. Light input ownership, AUTO battery pause and tuning limits remain.
-Soy IR adapters remove obsolete replacement calls; the framework retains HUD
-recovery and beam pose. Existing GAMMA animations, Soy headlamp and Borksy laser
-bridges are unchanged. The previous idle/fire/fire2 correction remains.
-
-Stable promotion changes labels, installer presentation and release documentation
-only. Gameplay-affecting runtime source is identical to the accepted RC. Original
-upstream framework behavior is not presented as new Light functionality.
+UTLF remains the official 1.0.2 integration baseline. The earlier firing and ADS
+availability corrections, GAMMA headlamp animation bridge, Soy IR/headlamp adapters
+and Borksy laser integrations are retained. No new third-party component or asset
+is introduced. Stable promotion preserves rc.7 gameplay bytes except version labels.

@@ -1,0 +1,89 @@
+<w>
+  <background x="545" y="80" width="445" height="610" stretch="1">
+    <texture r="0" g="0" b="0" a="200">ui_icons_PDA_tooltips</texture>
+  </background>
+  <caption x="10" y="10" width="425" height="24">
+    <text font="graffiti22" r="220" g="220" b="220" a="255" align="c" />
+  </caption>
+  <weapon_name x="10" y="34" width="425" height="20">
+    <text font="letterica18" r="180" g="180" b="220" a="255" align="c" />
+  </weapon_name>
+  <lbl_parent_section x="10" y="52" width="425" height="16">
+    <text font="letterica16" r="120" g="180" b="120" a="255" align="c" />
+  </lbl_parent_section>
+  <lbl_brightness x="15" y="72" width="200" height="20">
+    <text font="letterica16" r="170" g="170" b="170" a="255" />
+  </lbl_brightness>
+  <track_brightness x="15" y="92" width="340" height="16" step="0.1" />
+  <val_brightness x="360" y="90" width="70" height="20">
+    <text font="letterica16" r="200" g="200" b="250" a="255" align="c" />
+  </val_brightness>
+  <lbl_dot_size x="15" y="120" width="200" height="20">
+    <text font="letterica16" r="170" g="170" b="170" a="255" />
+  </lbl_dot_size>
+  <track_dot_size x="15" y="140" width="340" height="16" step="0.5" />
+  <val_dot_size x="360" y="138" width="70" height="20">
+    <text font="letterica16" r="200" g="200" b="250" a="255" align="c" />
+  </val_dot_size>
+  <lbl_beam_brightness x="15" y="168" width="200" height="20">
+    <text font="letterica16" r="170" g="170" b="170" a="255" />
+  </lbl_beam_brightness>
+  <track_beam_brightness x="15" y="188" width="340" height="16" step="0.1" />
+  <val_beam_brightness x="360" y="186" width="70" height="20">
+    <text font="letterica16" r="200" g="200" b="250" a="255" align="c" />
+  </val_beam_brightness>
+  <lbl_beam_size x="15" y="216" width="200" height="20">
+    <text font="letterica16" r="170" g="170" b="170" a="255" />
+  </lbl_beam_size>
+  <track_beam_size x="15" y="236" width="340" height="16" step="0.1" />
+  <val_beam_size x="360" y="234" width="70" height="20">
+    <text font="letterica16" r="200" g="200" b="250" a="255" align="c" />
+  </val_beam_size>
+  <lbl_hue x="15" y="264" width="200" height="20">
+    <text font="letterica16" r="170" g="170" b="170" a="255" />
+  </lbl_hue>
+  <track_hue x="15" y="284" width="340" height="16" step="1" />
+  <val_hue x="360" y="282" width="70" height="20">
+    <text font="letterica16" r="200" g="200" b="250" a="255" align="c" />
+  </val_hue>
+  <lbl_hide_primary x="50" y="318" width="380" height="20">
+    <text font="letterica16" r="170" g="170" b="170" a="255" />
+  </lbl_hide_primary>
+  <chk_hide_primary x="15" y="316" width="35" height="30" stretch="1">
+    <texture>ui_inGame2_checkbox</texture>
+  </chk_hide_primary>
+  <lbl_hide_alt x="50" y="342" width="380" height="20">
+    <text font="letterica16" r="170" g="170" b="170" a="255" />
+  </lbl_hide_alt>
+  <chk_hide_alt x="15" y="340" width="35" height="30" stretch="1">
+    <texture>ui_inGame2_checkbox</texture>
+  </chk_hide_alt>
+  <btn_reset x="40" y="530" width="160" height="30" stretch="1">
+    <texture>ui_button_ordinary</texture>
+    <text font="letterica18" align="c" />
+  </btn_reset>
+  <btn_export x="40" y="568" width="160" height="30" stretch="1">
+    <texture>ui_button_ordinary</texture>
+    <text font="letterica18" align="c" />
+  </btn_export>
+  <btn_close x="245" y="530" width="160" height="30" stretch="1">
+    <texture>ui_button_ordinary</texture>
+    <text font="letterica18" align="c" />
+  </btn_close>
+  <bling_ads x="15" y="380" width="35" height="30" stretch="1">
+    <texture>ui_inGame2_checkbox</texture>
+  </bling_ads>
+  <bling_ads_label x="50" y="383" width="380" height="22">
+    <text font="letterica16" r="180" g="210" b="180" a="255">Only show while aiming (all ADS)</text>
+  </bling_ads_label>
+  <bling_alt x="15" y="418" width="35" height="30" stretch="1">
+    <texture>ui_inGame2_checkbox</texture>
+  </bling_alt>
+  <bling_alt_label x="50" y="421" width="380" height="22">
+    <text font="letterica16" r="180" g="210" b="180" a="255">Only show in canted / alternate aim</text>
+  </bling_alt_label>
+  <bling_all_lasers x="25" y="474" width="395" height="32" stretch="1">
+    <texture>ui_button_ordinary</texture>
+    <text font="letterica16" align="c" />
+  </bling_all_lasers>
+</w>

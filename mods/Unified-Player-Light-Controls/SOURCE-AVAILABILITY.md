@@ -1,7 +1,8 @@
-# Corresponding source — 2.1.2
+# Corresponding source — Light 2.2.0
 
-Readable runtime, preferred maintained modules, generators and exact
-necessary inputs are supplied in the public corresponding-source tree:
-[Unified Player Light Controls source](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/tree/unified-player-light-controls-v2.1.2/source/light-2.1.2).
-Follow its portable reproduction instructions. Gameplay dependencies
-are installed separately. Preserve original licenses and credits.
+Preferred maintained modules, transformation generators, readable retained inputs
+and original drawing source are available in the [versioned source tree](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/tree/one-key-light-v2.2.0/source/light-2.2.0).
+Run `python reproduce.py` from a clean source copy to reproduce both full package
+trees. Python 3 is a build dependency only; Pillow is needed only to redraw art.
+Full upstream gameplay dependencies are installed separately. Preserve credits,
+license texts, permission notices and modified-source disclosures.

@@ -1,0 +1,83 @@
+<w>
+  <background x="545" y="70" width="440" height="638" stretch="1">
+    <texture r="0" g="0" b="0" a="220">ui_icons_PDA_tooltips</texture>
+  </background>
+  <title x="15" y="14" width="410" height="28">
+    <text font="graffiti22" r="220" g="220" b="220" a="255" align="c" />
+  </title>
+  <subtitle x="15" y="44" width="410" height="20">
+    <text font="letterica16" r="130" g="170" b="130" a="255" align="c">INFRARED ILLUMINATION CONTROL</text>
+  </subtitle>
+  <status x="30" y="68" width="380" height="20">
+    <text font="letterica16" r="170" g="170" b="170" a="255" />
+  </status>
+  <weapon_label x="25" y="104" width="105" height="20">
+    <text font="letterica16" r="170" g="170" b="170" a="255" />
+  </weapon_label>
+  <weapon_value x="130" y="104" width="280" height="20">
+    <text font="letterica16" r="170" g="170" b="170" a="255" />
+  </weapon_value>
+  <light_label x="25" y="136" width="105" height="20">
+    <text font="letterica16" r="170" g="170" b="170" a="255" />
+  </light_label>
+  <light_value x="130" y="136" width="280" height="20">
+    <text font="letterica16" r="170" g="170" b="170" a="255" />
+  </light_value>
+  <brightness_label x="25" y="190" width="260" height="20">
+    <text font="letterica18" r="200" g="200" b="200" a="255" />
+  </brightness_label>
+  <brightness_value x="345" y="190" width="65" height="20">
+    <text font="letterica16" r="180" g="210" b="180" a="255" align="r" />
+  </brightness_value>
+  <brightness_slider x="25" y="214" width="385" height="22" min="0.25" max="2" step="0.05" is_integer="0">
+    <texture>ui_slider_e</texture>
+  </brightness_slider>
+  <range_label x="25" y="254" width="260" height="20">
+    <text font="letterica18" r="200" g="200" b="200" a="255" />
+  </range_label>
+  <range_value x="345" y="254" width="65" height="20">
+    <text font="letterica16" r="180" g="210" b="180" a="255" align="r" />
+  </range_value>
+  <range_slider x="25" y="278" width="385" height="22" min="5" max="100" step="1" is_integer="0">
+    <texture>ui_slider_e</texture>
+  </range_slider>
+  <cone_label x="25" y="318" width="260" height="20">
+    <text font="letterica18" r="200" g="200" b="200" a="255" />
+  </cone_label>
+  <cone_value x="330" y="318" width="80" height="20">
+    <text font="letterica16" r="180" g="210" b="180" a="255" align="r" />
+  </cone_value>
+  <cone_slider x="25" y="342" width="385" height="22" min="8" max="120" step="1" is_integer="0">
+    <texture>ui_slider_e</texture>
+  </cone_slider>
+  <chk_enabled x="20" y="382" width="35" height="30" stretch="1">
+    <texture>ui_inGame2_checkbox</texture>
+  </chk_enabled>
+  <lbl_enabled x="58" y="388" width="340" height="22">
+    <text font="letterica18" r="210" g="210" b="210" a="255">Enable IR Light</text>
+  </lbl_enabled>
+  <ir_status x="25" y="418" width="390" height="22">
+    <text font="letterica16" r="170" g="170" b="170" a="255" />
+  </ir_status>
+  <notice x="20" y="526" width="400" height="18">
+    <text font="letterica16" r="150" g="180" b="150" a="255" align="c" />
+  </notice>
+  <bling_all x="25" y="548" width="385" height="30" stretch="1">
+    <texture>ui_button_ordinary</texture>
+    <text font="letterica16" align="c">Save and Apply to ALL Weapons and Lights</text>
+  </bling_all>
+  <reset_button x="25" y="592" width="170" height="32" stretch="1">
+    <texture>ui_button_ordinary</texture>
+    <text font="letterica18" align="c" />
+  </reset_button>
+  <close_button x="245" y="592" width="170" height="32" stretch="1">
+    <texture>ui_button_ordinary</texture>
+    <text font="letterica18" align="c" />
+  </close_button>
+  <aim_ads x="20" y="442" width="25" height="24" stretch="1"><texture>ui_inGame2_checkbox</texture></aim_ads>
+  <aim_ads_label x="52" y="444" width="355" height="22"><text font="letterica16" r="210" g="210" b="210" a="255">Only while aiming (all ADS)</text></aim_ads_label>
+  <aim_alt x="20" y="468" width="25" height="24" stretch="1"><texture>ui_inGame2_checkbox</texture></aim_alt>
+  <aim_alt_label x="52" y="470" width="355" height="22"><text font="letterica16" r="210" g="210" b="210" a="255">Only while alternate / canted aiming</text></aim_alt_label>
+  <aim_sync x="20" y="494" width="25" height="24" stretch="1"><texture>ui_inGame2_checkbox</texture></aim_sync>
+  <aim_sync_label x="52" y="496" width="355" height="22"><text font="letterica16" r="210" g="210" b="210" a="255">Auto-switch with NVGs (IR / White Light)</text></aim_sync_label>
+</w>

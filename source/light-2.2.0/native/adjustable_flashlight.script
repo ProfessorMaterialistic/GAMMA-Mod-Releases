@@ -1,0 +1,29 @@
+-- Native/G2X adapter. Engine presets and battery lifecycle remain authoritative.
+oklc_backend_name="Native / G2X presets"
+local function torch() return db and db.actor and db.actor:item_in_slot(10) end
+local function handheld()
+    local d=db and db.actor and db.actor.active_detector and db.actor:active_detector()
+    return d and d:section()=="device_flashlight" or false
+end
+function is_enabled() local t=torch();return t and item_device.is_torch_active()==t:id() or false end
+function is_active() local t=torch();return t and t:torch_enabled()==true or false end
+function get_status() return {enabled=is_enabled(),torch=is_active(),backend=oklc_backend_name} end
+function oklc_available() return torch()~=nil and not handheld() end
+function set_enabled(enabled)
+    local handled=light_compat.select("headlamp",enabled)
+    if handled~=nil then return handled end
+    if not torch() or handheld() then return false end
+    if enabled and not item_device.is_device_charged(torch()) then return false end
+    if is_enabled()~=(enabled==true) then item_device.toggle_torch() end
+    return true
+end
+function toggle_from_vanilla()
+    local handled=light_compat.manual("headlamp")
+    if handled~=nil then return handled end
+    return set_enabled(not is_enabled())
+end
+function toggle_immediate() return toggle_from_vanilla() end
+function toggle() return light_backends.toggle("headlamp") end
+function suppress_vanilla_torch_after_input() end
+function should_suppress_torch_release() return false end
+function on_game_start() end

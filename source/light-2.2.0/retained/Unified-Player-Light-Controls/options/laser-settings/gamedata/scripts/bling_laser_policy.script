@@ -1,0 +1,152 @@
+function mode(section)
+    local legacy=unified_light_store.get("bling_laser_policy/"..bling_light_profiles.family(section)) or 0
+    local value=bling_light_profiles.get("laser",section,"policy",legacy)
+    return bling_light_control.automatic_policy("laser",value)
+end
+local keys={"brightness","dot_size","beam_brightness","beam_size","hue"}
+local bools={"no_laser_primary_aim","no_laser_alt_aim"}
+local original_cfg
+local function numeric(cfg,section)
+    local values={policy=mode(section)}
+    for _,k in ipairs(keys) do values[k]=cfg[k] or (k=="hue" and 0 or 1) end
+    for _,k in ipairs(bools) do
+        local v=cfg[k]
+        if v==nil then v=zzz_bas_laser_control["opt_"..k] end
+        values[k]=v and 1 or 0
+    end
+    return values
+end
+function effective(section)
+    local cfg=original_cfg(section)
+    if not section then return cfg end
+    local out={};for k,v in pairs(cfg) do out[k]=v end
+    local defaults=numeric(cfg,section)
+    for _,k in ipairs(keys) do out[k]=bling_light_profiles.get("laser",section,k,defaults[k]) end
+    for _,k in ipairs(bools) do out[k]=bling_light_profiles.get("laser",section,k,defaults[k])==1 end
+    return out
+end
+local function save_policy(section,value)
+    local defaults=numeric(effective(section),section)
+    bling_light_profiles.put("laser",section,{policy=value},defaults)
+end
+local function apply_all_fields(dialog)
+    if not dialog.wpn_section then return end
+    local weapon=db.actor and db.actor:active_item()
+    if not weapon or bling_light_profiles.family(weapon:section())~=bling_light_profiles.family(dialog.wpn_section) then return end
+    refresh(dialog)
+    local values={policy=mode(dialog.wpn_section)}
+    for _,k in ipairs(keys) do values[k]=dialog.tracks[k].ctrl:GetFValue() end
+    values.no_laser_primary_aim=dialog.chk_hide_primary:GetCheck() and 1 or 0
+    values.no_laser_alt_aim=dialog.chk_hide_alt:GetCheck() and 1 or 0
+    bling_light_profiles.apply_all("laser",values)
+    -- Invalidate shader cache without changing the saved laser toggle state.
+    zzz_bas_laser_control.set_weapon_cfg(dialog.wpn_section,effective(dialog.wpn_section))
+    dialog.bling_all:TextControl():SetText("Saved for ALL Weapons - individual edits still allowed")
+end
+function apply_all(dialog)
+    return unified_light_store.edit(function() return apply_all_fields(dialog) end)
+end
+function allowed(policy,zoomed,zoom_type)
+    if policy==5 then return not (zoomed and zoom_type==0) end
+    if policy==6 then return not (zoomed and zoom_type==1) end
+    if policy==7 then return not zoomed end
+    if policy==0 or policy==1 then return true end
+    if not zoomed then return false end
+    if policy==2 then return true end
+    return (policy==3 and zoom_type==0) or (policy==4 and zoom_type==1)
+end
+function refresh(dialog)
+    if not dialog.wpn_section then return end
+    if dialog.bling_loaded~=dialog.wpn_section then load(dialog) end
+    local value=mode(dialog.wpn_section)
+    if bling_light_control.state("laser",value)~=2 then value=0 end
+    local ads=dialog.bling_ads:GetCheck()
+    local alt=dialog.bling_alt:GetCheck()
+    local requested=value
+    if ads~=dialog.bling_last_ads then requested=ads and 2 or 0
+    elseif alt~=dialog.bling_last_alt then requested=alt and 4 or 0 end
+    if requested~=value then
+        bling_light_control.set_policy("laser",requested);value=requested
+    end
+    bling_light_control.refresh(dialog,"laser",value)
+    dialog.bling_ads:SetCheck(value==2);dialog.bling_alt:SetCheck(value==4)
+    dialog.bling_last_ads=value==2;dialog.bling_last_alt=value==4
+    dialog.chk_hide_primary:Enable(true);dialog.chk_hide_alt:Enable(true)
+end
+function load(dialog)
+    local value=mode(dialog.wpn_section)
+    -- Older test-build choices are folded into the two explicit restrictions.
+    if value==1 or value==3 then
+        value=value==3 and 2 or 0
+        save_policy(dialog.wpn_section,value)
+    end
+    if bling_light_control.state("laser",value)~=2 then value=0 end
+    dialog.bling_ads:SetCheck(value==2);dialog.bling_alt:SetCheck(value==4)
+    dialog.bling_last_ads=value==2;dialog.bling_last_alt=value==4
+    dialog.bling_loaded=dialog.wpn_section
+end
+function init(dialog,xml)
+    bling_light_control.init(dialog,dialog.back,"laser",448,function()
+        return dialog.wpn_section and mode(dialog.wpn_section) or 0
+    end)
+    dialog.bling_all=xml:Init3tButton("bling_all_lasers",dialog.back)
+    dialog.bling_all:TextControl():SetText("Save and Apply to ALL Weapons")
+    dialog:Register(dialog.bling_all,"bling_all_lasers")
+    dialog:AddCallback("bling_all_lasers",ui_events.BUTTON_CLICKED,function() apply_all(dialog) end,dialog)
+    dialog.bling_ads=xml:InitCheck("bling_ads",dialog.back)
+    dialog.bling_alt=xml:InitCheck("bling_alt",dialog.back)
+    xml:InitStatic("bling_ads_label",dialog.back):TextControl():SetText("Only show while aiming (all ADS)")
+    xml:InitStatic("bling_alt_label",dialog.back):TextControl():SetText("Only show in canted / alternate aim")
+end
+local hooked=false
+function install()
+    local laser=zzz_bas_laser_control
+    if hooked or not laser or type(laser.get_weapon_cfg)~="function" then return end
+    original_cfg=laser.get_weapon_cfg;local original_set=laser.set_laser
+    local original_toggle=laser.toggle_laser
+    laser.toggle_laser=function(id)
+        local w=db.actor and db.actor:active_item()
+        if w and w:id()==id and not bling_light_control.is_applying() then
+            return bling_light_control.manual("laser")
+        end
+        return original_toggle(id)
+    end
+    local original_save=laser.set_weapon_cfg;local original_clear=laser.clear_weapon_cfg
+    laser.bling_original_cfg=effective -- UI needs effective values before visibility filtering.
+    laser.set_weapon_cfg=function(section,cfg)
+        return unified_light_store.edit(function()
+        bling_light_profiles.put("laser",section,numeric(cfg,section),numeric(effective(section),section))
+        local result=original_save(section,cfg);unified_lights.invalidate();return result
+        end)
+    end
+    laser.clear_weapon_cfg=function(section)
+        return unified_light_store.edit(function()
+        local result=original_clear(section)
+        bling_light_control.reset_policy("laser")
+        local defaults=numeric(original_cfg(section),section);defaults.policy=0
+        bling_light_profiles.put("laser",section,defaults,defaults)
+        unified_lights.invalidate();return result
+        end)
+    end
+    laser.get_weapon_cfg=function(section)
+        local cfg=effective(section)
+        local policy=section and mode(section) or 0
+        if section and (bling_light_control.read("laser","mode")==1 or (policy>=2 and policy<=4)) then
+            local copy={};for k,v in pairs(cfg) do copy[k]=v end
+            copy.no_laser_primary_aim=false;copy.no_laser_alt_aim=false;return copy
+        end
+        return cfg
+    end
+    laser.set_laser=function(enabled,section)
+        local weapon=db.actor and db.actor:active_item()
+        local current=weapon and weapon:section()
+        if enabled~=0 and current then
+            local policy=bling_light_control.gate("laser",mode(current))
+            local w=weapon:cast_Weapon()
+            if policy<0 or (policy>0 and (not w or not allowed(policy,w:IsZoomed(),w:GetZoomType()))) then enabled=0 end
+        end
+        return original_set(enabled,section)
+    end
+    hooked=true
+end
+function on_game_start() end

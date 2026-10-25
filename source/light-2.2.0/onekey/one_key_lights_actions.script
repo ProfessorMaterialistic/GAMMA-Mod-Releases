@@ -1,0 +1,79 @@
+local order={"headlamp","utlf_visible","laser","utlf_ir","headlamp_ir"}
+-- Retain saved legacy IDs as device aliases; only explicit MCM edits change linking.
+local function device(id) return id=="weapon_situational" and "utlf_visible" or id=="headlamp_situational" and "headlamp" or id end
+function module(n) return light_compat.module(n) end
+function present(n) return module(n)~=nil end
+function warn(id,err) light_compat.warn(id,err) end
+function utlf_context() return light_backends.context() end
+function ensure() end -- inexpensive legacy alias; discovery remains lazy
+function equipped(id)
+    id=device(id)
+    local api=module("unified_lights")
+    if api then return api.get_state(id).equipped end
+    return light_backends.equipped(id)
+end
+function pair(id)
+    id=device(id)
+    local api=module("unified_lights");if not api then return end
+    if (id=="utlf_visible" or id=="utlf_ir") and api.get_linked("weapon") then return "weapon" end
+    if (id=="headlamp" or id=="headlamp_ir") and api.get_linked("head") then return "head" end
+end
+function radial_id(id) id=device(id);local p=pair(id);return p and (p=="weapon" and "weapon_situational" or "headlamp_situational") or id end
+function list(menu,raw)
+    local result,seen={},{}
+    if not menu then result={{id="none",name=light_compat.action_name("none"),menu=false},{id="quick_menu",name=light_compat.action_name("quick_menu"),menu=false}} end
+    for _,id in ipairs(order) do
+        if id=="headlamp" or light_backends.installed(id) then
+            local effective=menu and not raw and radial_id(id) or id
+            if not seen[effective] then result[#result+1]={id=effective,name=light_compat.action_name(effective)};seen[effective]=true end
+        end
+    end
+    if not menu then
+        if light_compat.controller() and light_backends.installed("headlamp_ir") then
+            result[#result+1]={id="headlamp_situational",name=light_compat.action_name("headlamp_situational"),menu=false}
+        end
+        if light_backends.installed("utlf_visible") then
+            result[#result+1]={id="weapon_situational",name=light_compat.action_name("weapon_situational"),menu=false}
+        end
+    end
+    local tactical=module("light_tactical")
+    if tactical and not raw then
+        local input=module("one_key_lights_input")
+        local cfg=input and input.settings() or {}
+        for _,entry in ipairs(tactical.choices()) do
+            if not menu or cfg["show_"..entry.id]==true then result[#result+1]=entry end
+        end
+    end
+    if not menu then
+        -- Group choices by device. Keep radial order and saved action IDs intact.
+        local rank={none=1,quick_menu=2,headlamp_situational=3,weapon_situational=4,laser=5,
+            headlamp=6,headlamp_ir=7,utlf_visible=8,utlf_ir=9,
+            cqb_white=10,cqb_ir=11,cqb_white_laser=12,cqb_ir_laser=13,momentary_laser=14}
+        table.sort(result,function(a,b) return (rank[a.id] or 99)<(rank[b.id] or 99) end)
+    end
+    return result
+end
+function state(id)
+    local tactical=module("light_tactical")
+    if tactical and tactical.known(id) then return tactical.available(id),tactical.current()==id end
+    id=device(id)
+    if id=="none" or id=="quick_menu" then return true,false end
+    local api=module("unified_lights")
+    if api then local s=api.get_state(id);return s.installed,s.emitting end
+    -- Equipment and battery do not prohibit a logical OFF edit.
+    return light_backends.installed(id),light_backends.emitting(id)
+end
+function run(id)
+    local tactical=module("light_tactical")
+    if tactical and tactical.known(id) then return tactical.toggle(id) end
+    id=device(id)
+    if id=="none" then return true end
+    if id=="quick_menu" then one_key_lights_menu.open();return true end
+    if not db or not db.actor or not db.actor:alive() then return false end
+    local api=module("unified_lights")
+    if api then
+        if one_key_lights_input.settings().gesture_behavior==2 then return api.cycle_mode(id) end
+        return api.manual_toggle(id)
+    end
+    return one_key_lights_standalone.toggle(id)
+end

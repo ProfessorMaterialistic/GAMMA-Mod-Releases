@@ -1,0 +1,66 @@
+-- Optional observation only: no emitter commands, saved intent or config writes.
+-- Console values are CPU-side evidence, never proof of GPU-visible output.
+local deadline,remaining,next_update=0,0,0
+local DURATION_MS,MAX_RECORDS,UPDATE_MS=10000,256,100
+local function now() return time_global() end
+function active() return remaining>0 and now()<deadline end
+function stop()
+    if remaining>0 and printf then printf("[Light Laser Trace] stopped") end
+    deadline=0;remaining=0
+end
+local function readback()
+    if not get_console then return "unavailable:no-console" end
+    local ok,value=pcall(function() return get_console():get_string("shader_param_6") end)
+    if not ok or type(value)~="string" or value=="" then return "unavailable:no-string-readback" end
+    return value
+end
+local function observe(event,detail)
+    local laser=light_compat.module("zzz_bas_laser_control")
+    local weapon=light_backends.weapon()
+    local id=weapon and weapon:id()
+    local section=weapon and weapon:section()
+    local api=light_compat.module("unified_lights")
+    local owner=api and "unified" or "onekey"
+    -- Read the existing owner directly: standalone mode() may seed a new ID.
+    local saved=laser and laser.light_read_intent and id and laser.light_read_intent(id,owner,"mode")
+    local tactical=light_compat.module("light_tactical")
+    local temporary=tactical and tactical.mode("laser")
+    local requested=laser and laser.oklc_is_on and id and laser.oklc_is_on(id)
+    local output=laser and laser.light_emitting and laser.light_emitting()
+    local callers={}
+    if debug and debug.getinfo then
+        for depth=5,8 do
+            local caller=debug.getinfo(depth,"Sl")
+            if caller then callers[#callers+1]=tostring(caller.short_src)..":"..tostring(caller.currentline) end
+        end
+    end
+    local location=#callers>0 and table.concat(callers," <- ") or "unavailable"
+    printf("[Light Laser Trace] t=%s event=%s weapon=%s section=%s owner=%s saved_mode=%s temporary=%s requested=%s output_flag=%s call=%s caller=%s cpu_param6=%s",
+        tostring(now()),event,tostring(id),tostring(section),owner,tostring(saved),tostring(temporary),
+        tostring(requested),tostring(output),tostring(detail or "-"),location,readback())
+end
+function sample(event,detail)
+    if remaining<=0 then return end
+    if now()>=deadline then stop();return end
+    if event=="update-before" then
+        if now()<next_update then return end
+        next_update=now()+UPDATE_MS
+    end
+    remaining=remaining-1
+    -- A diagnostic failure must never interrupt a light command.
+    local ok,err=pcall(observe,event,detail)
+    if not ok then
+        if printf then printf("[Light Laser Trace] unavailable:%s",tostring(err)) end
+        stop();return
+    end
+    if remaining==0 then deadline=0;printf("[Light Laser Trace] record limit reached") end
+end
+function start()
+    remaining=MAX_RECORDS;deadline=now()+DURATION_MS;next_update=0
+    sample("start","10 seconds / 256 records; CPU values are not GPU output")
+end
+function mcm_option()
+    return {id="laser_trace",type="check",val=1,def=false,no_str=true,
+        caption="Capture Laser Diagnostic (10 Seconds)",curr={active},
+        functor={function(value) if value then start() else stop() end end}}
+end

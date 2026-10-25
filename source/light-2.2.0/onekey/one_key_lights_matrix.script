@@ -1,0 +1,44 @@
+-- Consumer-local modifier resolution; no dependency on ZoneBind internals.
+local modifier_keys={alt={56,184},ctrl={29,157},shift={42,54}}
+function modifier()
+    local selected="none"
+    for name,keys in pairs(modifier_keys) do
+        if (key_state(keys[1]) or 0)~=0 or (key_state(keys[2]) or 0)~=0 then
+            if selected~="none" then return "conflict" end
+            selected=name
+        end
+    end
+    return selected
+end
+function mapping(cfg,name)
+    local result={double_ms=cfg.double_ms,hold_ms=cfg.hold_ms,momentary=cfg["momentary_"..name] or "none"}
+    for _,gesture in ipairs({"tap","double","hold"}) do
+        result[gesture]=name=="none" and cfg[gesture] or cfg[name.."_"..gesture] or "none"
+    end
+    -- Keep the saved combo ID; only the Momentary Hold route uses NVG routing.
+    if result.momentary=="cqb_white_laser" then result.momentary="momentary_linked_laser" end
+    return result
+end
+function enabled(cfg,name)
+    if name=="none" then return true end
+    local value=cfg["enable_"..name]
+    if value~=nil then return value==true end
+    return cfg.matrix_enabled==true or (cfg["momentary_"..name] or "none")~="none"
+end
+function any_enabled(cfg)
+    return enabled(cfg,"alt") or enabled(cfg,"ctrl") or enabled(cfg,"shift")
+end
+function conflicts(cfg)
+    local result={}
+    if cfg.key>0 and cfg.key==cfg.menu_key then result[#result+1]="Light Key and Quick Menu Key overlap; Light Key takes priority." end
+    for _,name in ipairs({"none","alt","ctrl","shift"}) do
+        if (cfg["momentary_"..name] or "none")~="none" then
+            local map=mapping(cfg,name)
+            if enabled(cfg,name) and map.hold~="none" then
+                result[#result+1]=(name=="none" and "No Modifier" or ({alt="Alt",ctrl="Ctrl",shift="Shift"})[name])..": Momentary Hold replaces Hold only. Tap and Double Tap remain available."
+            end
+        end
+    end
+    if any_enabled(cfg) and cfg.shortcut then result[#result+1]="Enabled modifier actions replace the Quick Menu modifier shortcut." end
+    return result
+end

@@ -1,4 +1,4 @@
-# License notices — Light 2.1.1
+# License notices — Light 2.2.0
 
 Original authors retain their copyrights. These packages contain original Light
 code/art and modified upstream components; their terms are scoped below.

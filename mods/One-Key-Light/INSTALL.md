@@ -1,35 +1,29 @@
-# Install, update and rollback — 2.1.2
+# Install or update Light 2.2.0
 
-Save and close GAMMA. Install the .7z archive through MO2 into a new versioned
-folder. Enable 2.1.2 and disable the older copy at the same relative priority;
-keep old folders and archives for rollback. Never enable two versions of the
-same Light mod together. Existing MCM preferences, keybinds and saves are retained.
+1. Save and close GAMMA and MO2. Keep a pre-update save and your current Light mods.
+2. Install each .7z through MO2 as a new mod. If using both Light mods, update both
+   to 2.2.0 and choose the same headlamp backend and integrations in both installers.
+3. Select only integrations whose dependencies are installed. Keep existing backend
+   choices when upgrading. The installers do not supply complete dependencies.
+4. Disable the replaced Light entries and enable the new ones at their previous
+   relative priorities. Keep later compatibility overrides in their existing order.
+   Check conflicts: an older light script winning over the new pair can hide changes.
+5. Keep existing MCM settings and keybinds; no reset or new game is required by this
+   update. Open One Key Light > Controls to configure Momentary Hold and modifiers.
 
-Both mods work independently. If using both, update both to 2.1.2 and keep
-Unified at higher priority than One Key. Match the Native/G2X or Soy Adjustable
-headlamp choice in both installers. Keep established later compatibility
-overrides, including an applicable Soy Adjustable GFY patch, at their existing
-priority. Do not overwrite those patches by moving the entire Light pair higher.
+One Key and Unified also work separately. Without Unified, advanced AUTO and
+linked-mode controls are unavailable. Headlamps remain OFF/ON; supported weapon
+lights and lasers retain AUTO when using Unified.
 
-Select Laser Settings, UTLF IR and IR Headlamp compatibility only if their
-dependencies are installed. Use official UTLF 1.0.2 and supported weapon/light
-registrations for UTLF output. The installers contain integration patches,
-not complete dependency mods. See COMPATIBILITY.md for versions and limits.
+## Quick check
 
-No dependency upgrade is needed when updating from 2.1.1. No engine binaries
-or diagnostic logging scripts are included.
+From an OFF weapon light, hold past the threshold: it should turn on with one
+click and turn off with one click on release. Tap and Double Tap still perform
+their own actions. Repeat with the desired modifier, NVGs and laser combination.
+Apply and reopen Controls after changing a modifier enable checkbox.
 
-Rollback with GAMMA closed: disable 2.1.2 and enable the retained 2.1.1 versions
-at their former priorities. To remove a Light mod, disable its MO2 entry;
-do not delete saves or unrelated dependency mods. Restore your preferred vanilla
-Torch binding using One Key's MCM control before removing One Key if applicable.
+## Rollback
 
-## Quick gameplay check
-
-1. Turn the headlamp OFF, open inventory, and check a magazine.
-2. Toggle the laser with the headlamp OFF.
-3. Set a modular weapon light ON; enter and leave normal and alternate ADS.
-4. Repeat with AUTO and check the configured aiming policy.
-5. Fire several single shots, reload, and switch weapons.
-6. Check magnifier changes and linked NVG/IR behavior.
-7. Save/reload, then play normally and report any recurring flicker or toggles.
+Close the game and MO2, disable both new entries and re-enable your previous pair
+at the same priorities. Use your preserved pre-update save if investigating a
+save-related problem. Do not mix an old One Key version with a new Unified version.

@@ -1,0 +1,428 @@
+local GUI = nil
+
+class "UTLFIRPhase5Dialog" (CUIScriptWnd)
+
+function UTLFIRPhase5Dialog:__init() super()
+    self.context = nil
+    self.last_range = nil
+    self.last_cone = nil
+    self.last_brightness = nil
+    self.loading_values = false
+    self.pending_range = nil
+    self.pending_cone = nil
+    self.pending_brightness = nil
+    self.pending_since = nil
+    self.apply_delay_ms = 250
+
+    self:InitControls()
+    self:InitCallbacks()
+end
+
+function UTLFIRPhase5Dialog:__finalize()
+    GUI = nil
+end
+
+local function translated_section_name(section)
+    if not section or section == "" then
+        return "Unknown"
+    end
+
+    local ini = system_ini()
+
+    if ini
+    and ini:section_exist(section)
+    and ini:line_exist(section, "inv_name") then
+        local string_id = ini:r_string(section, "inv_name")
+        local translated = game.translate_string(string_id)
+
+        if translated
+        and translated ~= ""
+        and translated ~= string_id then
+            return translated
+        end
+    end
+
+    return section
+end
+
+local function rounded(value)
+    return math.floor((tonumber(value) or 0) + 0.5)
+end
+
+local function changed(a, b, tolerance)
+    return math.abs((tonumber(a) or 0) - (tonumber(b) or 0))
+        > (tolerance or 0.0001)
+end
+
+function UTLFIRPhase5Dialog:InitControls()
+    self:SetWndRect(Frect():set(0, 0, 1024, 768))
+    self:SetAutoDelete(true)
+
+    local xml = CScriptXmlInit()
+    xml:ParseFile("ui_utlf_ir_mode.xml")
+
+    self.background = xml:InitStatic("background", self)
+
+    self.title = xml:InitTextWnd("title", self.background)
+    self.title:SetText("UTLF IR MODE")
+
+    self.status = xml:InitTextWnd("status", self.background)
+
+    self.weapon_label = xml:InitTextWnd("weapon_label", self.background)
+    self.weapon_label:SetText("Current weapon:")
+
+    self.weapon_value = xml:InitTextWnd("weapon_value", self.background)
+
+    self.light_label = xml:InitTextWnd("light_label", self.background)
+    self.light_label:SetText("Attached flashlight:")
+
+    self.light_value = xml:InitTextWnd("light_value", self.background)
+
+    self.range_label = xml:InitTextWnd("range_label", self.background)
+    self.range_label:SetText("IR Range")
+
+    self.range_value = xml:InitTextWnd("range_value", self.background)
+    self.range_slider = xml:InitTrackBar("range_slider", self.background)
+    self.range_slider:SetOptFBounds(5, 100)
+    self.range_slider:SetStep(1)
+
+    self.cone_label = xml:InitTextWnd("cone_label", self.background)
+    self.cone_label:SetText("IR Beam Size")
+
+    self.cone_value = xml:InitTextWnd("cone_value", self.background)
+    self.cone_slider = xml:InitTrackBar("cone_slider", self.background)
+    self.cone_slider:SetOptFBounds(8, 120)
+    self.cone_slider:SetStep(1)
+
+    self.brightness_label = xml:InitTextWnd("brightness_label", self.background)
+    self.brightness_label:SetText("IR Brightness")
+
+    self.brightness_value = xml:InitTextWnd("brightness_value", self.background)
+    self.brightness_slider = xml:InitTrackBar(
+        "brightness_slider",
+        self.background
+    )
+    self.brightness_slider:SetOptFBounds(0.25, 2.00)
+    self.brightness_slider:SetStep(0.05)
+
+    self.notice = xml:InitTextWnd("notice", self.background)
+    self.notice:SetText(
+        "These settings affect IR mode only. The normal flashlight is unchanged."
+    )
+
+    self.reset_button = xml:Init3tButton("reset_button", self.background)
+    self.reset_button:TextControl():SetText("Reset Defaults")
+    self:Register(self.reset_button, "reset_button")
+
+    self.close_button = xml:Init3tButton("close_button", self.background)
+    self.close_button:TextControl():SetText("Close")
+    self:Register(self.close_button, "close_button")
+end
+
+function UTLFIRPhase5Dialog:InitCallbacks()
+    self:AddCallback(
+        "reset_button",
+        ui_events.BUTTON_CLICKED,
+        self.ResetDefaults,
+        self
+    )
+
+    self:AddCallback(
+        "close_button",
+        ui_events.BUTTON_CLICKED,
+        self.Close,
+        self
+    )
+end
+
+function UTLFIRPhase5Dialog:SetUnavailable(status_text, weapon_name)
+    self.context = nil
+    self.status:SetText(status_text or "No compatible flashlight detected.")
+    self.weapon_value:SetText(weapon_name or "--")
+    self.light_value:SetText("--")
+    self.range_value:SetText("--")
+    self.cone_value:SetText("--")
+    self.brightness_value:SetText("--")
+end
+
+function UTLFIRPhase5Dialog:LoadActiveContext()
+    if not utlf_ir_mode
+    or type(utlf_ir_mode.get_active_ir_context) ~= "function" then
+        self:SetUnavailable("IR settings API is unavailable.")
+        return false
+    end
+
+    local context = utlf_ir_mode.get_active_ir_context()
+
+    if not context or not context.settings then
+        local weapon_name = nil
+
+        if utlf_core
+        and type(utlf_core.active_supported_weapon) == "function" then
+            local weapon = utlf_core.active_supported_weapon()
+
+            if weapon then
+                weapon_name = translated_section_name(weapon:section())
+            end
+        end
+
+        self:SetUnavailable(
+            weapon_name
+                and "No compatible UTLF light is available."
+                or "No supported UTLF weapon is active.",
+            weapon_name
+        )
+        return false
+    end
+
+    self.context = context
+
+    local settings = context.settings
+    local range = tonumber(settings.range) or 30
+    local cone = tonumber(settings.cone_deg) or 50
+    local brightness = tonumber(settings.brightness) or 1.0
+
+    self.loading_values = true
+
+    self.range_slider:SetFValue(range)
+    self.cone_slider:SetFValue(cone)
+    self.brightness_slider:SetFValue(brightness)
+
+    self.last_range = range
+    self.last_cone = cone
+    self.last_brightness = brightness
+
+    self.loading_values = false
+
+    if context.is_modular then
+        self.status:SetText("Supported modular flashlight detected.")
+    else
+        self.status:SetText("Supported integrated UTLF light detected.")
+    end
+
+    self.weapon_value:SetText(
+        translated_section_name(context.weapon:section())
+    )
+
+    if context.has_attached_modular_light then
+        self.light_value:SetText(
+            translated_section_name(context.light_section)
+        )
+    else
+        self.light_value:SetText("Integrated weapon light")
+    end
+
+    printf(
+        "[utlf_ir_mode_ui] loaded sliders for %s: range=%s cone=%s brightness=%s",
+        tostring(context.light_section),
+        tostring(range),
+        tostring(cone),
+        tostring(brightness)
+    )
+
+    return true
+end
+
+function UTLFIRPhase5Dialog:RefreshValueLabels()
+    if not self.context then
+        return
+    end
+
+    local range = self.range_slider:GetFValue()
+    local cone = self.cone_slider:GetFValue()
+    local brightness = self.brightness_slider:GetFValue()
+
+    self.range_value:SetText(
+        string.format("%d m", rounded(range))
+    )
+
+    self.cone_value:SetText(
+        string.format("%d deg", rounded(cone))
+    )
+
+    self.brightness_value:SetText(
+        string.format("%d%%", rounded(brightness * 100))
+    )
+end
+
+function UTLFIRPhase5Dialog:QueueChanges()
+    if self.loading_values or not self.context then
+        return
+    end
+
+    local range = rounded(self.range_slider:GetFValue())
+    local cone = rounded(self.cone_slider:GetFValue())
+    local brightness = math.floor(
+        self.brightness_slider:GetFValue() * 20 + 0.5
+    ) / 20
+
+    local differs_from_saved =
+        changed(range, self.last_range)
+        or changed(cone, self.last_cone)
+        or changed(brightness, self.last_brightness, 0.001)
+
+    if not differs_from_saved then
+        self.pending_range = nil
+        self.pending_cone = nil
+        self.pending_brightness = nil
+        self.pending_since = nil
+        return
+    end
+
+    local differs_from_pending =
+        changed(range, self.pending_range)
+        or changed(cone, self.pending_cone)
+        or changed(brightness, self.pending_brightness, 0.001)
+
+    if differs_from_pending then
+        self.pending_range = range
+        self.pending_cone = cone
+        self.pending_brightness = brightness
+        self.pending_since = time_global()
+    end
+end
+
+function UTLFIRPhase5Dialog:ApplyPendingChanges(force)
+    if not self.pending_since
+    or not self.context
+    or not utlf_ir_mode
+    or type(utlf_ir_mode.set_ir_settings) ~= "function" then
+        return
+    end
+
+    if not force
+    and time_global() - self.pending_since < self.apply_delay_ms then
+        return
+    end
+
+    local range = self.pending_range
+    local cone = self.pending_cone
+    local brightness = self.pending_brightness
+
+    local saved = utlf_ir_mode.set_ir_settings(
+        self.context.light_section,
+        range,
+        cone,
+        brightness
+    )
+
+    if not saved then
+        return
+    end
+
+    self.last_range = range
+    self.last_cone = cone
+    self.last_brightness = brightness
+
+    self.pending_range = nil
+    self.pending_cone = nil
+    self.pending_brightness = nil
+    self.pending_since = nil
+
+    if type(utlf_ir_mode.apply_active_ir_settings) == "function" then
+        utlf_ir_mode.apply_active_ir_settings()
+    end
+end
+
+function UTLFIRPhase5Dialog:ResetDefaults()
+    if not self.context
+    or not utlf_ir_mode
+    or type(utlf_ir_mode.reset_ir_settings) ~= "function" then
+        return
+    end
+
+    utlf_ir_mode.reset_ir_settings(
+        self.context.light_section,
+        self.context.profile
+    )
+
+    local settings = utlf_ir_mode.get_ir_settings(
+        self.context.light_section,
+        self.context.profile
+    )
+
+    if not settings then
+        return
+    end
+
+    self.pending_range = nil
+    self.pending_cone = nil
+    self.pending_brightness = nil
+    self.pending_since = nil
+
+    self.loading_values = true
+
+    self.range_slider:SetFValue(settings.range)
+    self.cone_slider:SetFValue(settings.cone_deg)
+    self.brightness_slider:SetFValue(settings.brightness)
+
+    self.last_range = settings.range
+    self.last_cone = settings.cone_deg
+    self.last_brightness = settings.brightness
+
+    self.loading_values = false
+
+    self.context.settings = settings
+    self:RefreshValueLabels()
+
+    if type(utlf_ir_mode.apply_active_ir_settings) == "function" then
+        utlf_ir_mode.apply_active_ir_settings()
+    end
+end
+
+function UTLFIRPhase5Dialog:ShowPanel()
+    self:LoadActiveContext()
+    self:RefreshValueLabels()
+    self:ShowDialog(true)
+    Register_UI("UTLFIRPhase5Dialog", "utlf_ir_mode_ui")
+end
+
+function UTLFIRPhase5Dialog:Update()
+    CUIScriptWnd.Update(self)
+
+    if not self:IsShown() then
+        return
+    end
+
+    self:QueueChanges()
+    self:ApplyPendingChanges(false)
+    self:RefreshValueLabels()
+end
+
+function UTLFIRPhase5Dialog:OnKeyboard(dik, keyboard_action)
+    local result = CUIScriptWnd.OnKeyboard(self, dik, keyboard_action)
+
+    if result == false
+    and keyboard_action == ui_events.WINDOW_KEY_PRESSED
+    and dik == DIK_keys.DIK_ESCAPE then
+        self:Close()
+    end
+
+    return result
+end
+
+function UTLFIRPhase5Dialog:Close()
+    self:QueueChanges()
+    self:ApplyPendingChanges(true)
+
+    if self:IsShown() then
+        self:HideDialog()
+    end
+
+    Unregister_UI("UTLFIRPhase5Dialog")
+end
+
+function open_dialog()
+    printf("[utlf_ir_mode_ui] phase 5 open_dialog called")
+
+    if GUI and GUI:IsShown() then
+        GUI:Close()
+        return
+    end
+
+    if not GUI then
+        GUI = UTLFIRPhase5Dialog()
+    end
+
+    GUI:ShowPanel()
+end

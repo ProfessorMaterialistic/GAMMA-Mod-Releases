@@ -36,3 +36,11 @@ This entry records repository documentation work. No mod version, release tag, d
 
 - Added the owner's selected rainy sunset screenshot above the root README heading, preserving the supplied PNG unchanged.
 - Completed the banner roadmap milestone and updated screenshot attribution.
+
+## October 24 — Light 2.2.0
+
+Matched release with grouped modifier gestures, threshold-based Momentary Hold,
+Tap/Double availability, restored ON/OFF sound feedback and retained laser fixes.
+Owner-confirmed on rc.7; stable changes labels/docs only. Existing permissions and
+notices cover the same integrated derivatives; no new third-party source/artwork.
+Portable corresponding source and exact inputs: `source/light-2.2.0`.
