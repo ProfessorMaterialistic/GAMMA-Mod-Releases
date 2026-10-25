@@ -1,0 +1,78 @@
+-- Aim visibility gates the existing player emitter, never the requested on/off state.
+function policy(mode,id)
+    local value=id and bling_light_profiles.get(mode,id,"aim_policy",0) or 0
+    return bling_light_control.automatic_policy(mode,value)
+end
+function allowed(value,zoomed,alternate)
+    return value==0 or (zoomed and (value==1 or (value==2 and alternate)))
+end
+function permits(mode,id,weapon)
+    local value=bling_light_control.gate(mode,policy(mode,id))
+    if value==0 then return true end
+    local w=weapon and weapon:cast_Weapon()
+    return w and allowed(value,w:IsZoomed(),w:GetZoomType()==1) or false
+end
+function current_mode()
+    local ir=utlf_ir_mode
+    local requested=ir and (ir.bling_ir_requested or ir.oklc_requested)
+    return ir and ((requested and requested()) or (ir.is_ir_active and ir.is_ir_active())) and "ir" or "weapon"
+end
+function battery_paused() return unified_lights.battery_paused() end
+function update() return unified_lights.reconcile(nil,false) end
+function sync_enabled() return unified_lights.get_linked("weapon") end
+function sync_available() return light_backends.installed("utlf_ir") end
+function sync_update() return unified_lights.reconcile(nil,false) end
+function toggle_sync() return unified_lights.set_linked("weapon",not sync_enabled()) end
+function install() end
+function on_game_start() end
+
+function snapshot(mode,c)
+    if mode=="ir" then
+        local s=c.settings
+        return {brightness=s.brightness,range=s.range,cone_deg=s.cone_deg,aim_policy=policy(mode,c.light_section)}
+    end
+    local r,g,b=bling_player_lights.rgb("weapon",c.id)
+    return {brightness=c.brightness,range=c.range,cone=c.cone,r=r,g=g,b=b,aim_policy=policy(mode,c.id)}
+end
+function context(dialog,mode)
+    local c=mode=="ir" and utlf_ir_mode.get_active_ir_context() or bling_player_lights.context(1)
+    local id=c and (mode=="ir" and c.light_section or c.id)
+    local old=dialog.context and (mode=="ir" and dialog.context.light_section or dialog.context.id)
+    if not id or id~=old then return nil,nil end
+    return c,id
+end
+function refresh(dialog,mode)
+    local c,id=context(dialog,mode)
+    local value=policy(mode,id)
+    bling_light_control.refresh(dialog,mode,value)
+    if bling_light_control.state(mode,value)~=2 then value=0 end
+    dialog.aim_ads:SetCheck(value==1);dialog.aim_alt:SetCheck(value==2)
+    dialog.aim_ads:Enable(c~=nil);dialog.aim_alt:Enable(c~=nil)
+    dialog.aim_sync:SetCheck(sync_enabled());dialog.aim_sync:Enable(sync_available()~=nil and sync_available()~=false)
+end
+function choose(dialog,mode,value)
+    local c,id=context(dialog,mode)
+    if c then
+        -- Clicking the active choice clears both (normal behavior).
+        local current=bling_light_control.state(mode,policy(mode,id))==2 and policy(mode,id) or 0
+        local next_value=current==value and 0 or value
+        bling_light_control.set_policy(mode,next_value)
+        update()
+    end
+    refresh(dialog,mode)
+end
+function init(dialog,xml,parent,mode)
+    bling_light_control.init(dialog,parent,mode,mode=="ir" and 388 or 134,function()
+        local c,id=context(dialog,mode);return policy(mode,id)
+    end)
+    dialog.aim_ads=xml:InitCheck("aim_ads",parent)
+    dialog.aim_alt=xml:InitCheck("aim_alt",parent)
+    dialog.aim_sync=xml:InitCheck("aim_sync",parent)
+    xml:InitTextWnd("aim_sync_label",parent)
+    dialog:Register(dialog.aim_sync,"aim_sync")
+    dialog:AddCallback("aim_sync",ui_events.BUTTON_CLICKED,function() toggle_sync();refresh(dialog,mode) end,dialog)
+    xml:InitTextWnd("aim_ads_label",parent);xml:InitTextWnd("aim_alt_label",parent)
+    dialog:Register(dialog.aim_ads,"aim_ads");dialog:Register(dialog.aim_alt,"aim_alt")
+    dialog:AddCallback("aim_ads",ui_events.BUTTON_CLICKED,function() choose(dialog,mode,1) end,dialog)
+    dialog:AddCallback("aim_alt",ui_events.BUTTON_CLICKED,function() choose(dialog,mode,2) end,dialog)
+end

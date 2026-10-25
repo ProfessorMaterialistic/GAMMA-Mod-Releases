@@ -1,3 +1,14 @@
+# Modified source — Light 2.2.1
+
+Bling / ProfessorMaterialistic extends the shared weapon-light availability gate
+to known in-hand inspection, reload, misfire and mode/launcher switch states.
+Named constants document the inspected engine state definitions. Power, equipment,
+NVG and native HUD suspension remain authoritative. No third-party component or
+asset is added; existing integrations, author credits and licenses are retained.
+Stable promotion preserves the accepted 2.2.1-rc.1 gameplay code except labels.
+
+## Retained earlier modifications
+
 # Modified source — Light 2.2.0
 
 Bling / ProfessorMaterialistic maintains the Light controls, shared compatibility

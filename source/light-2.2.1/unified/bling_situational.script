@@ -1,0 +1,15 @@
+-- Compatibility facade only. Shipped by Unified; One Key has no routing engine.
+function module(n) return light_compat.module(n) end
+function nv() return light_backends.nv() end
+function channel(pair) return unified_light_logic.route(pair,nv()) end
+function available(pair) return pair=="head" and light_backends.installed("headlamp_ir") or pair=="weapon" and light_backends.installed("utlf_ir") or false end
+function linked(pair) return unified_lights.get_linked(pair) end
+function family() return unified_lights.family() end
+local function id(pair) return pair=="head" and "headlamp_situational" or "weapon_situational" end
+function state(pair) return unified_lights.get_mode(id(pair)) end
+function set_link(pair,enabled) return unified_lights.set_linked(pair,enabled) end
+function select(pair,value) return unified_lights.set_mode(id(pair),value) end
+function emitting(pair) return unified_lights.get_state(id(pair)).emitting end
+function manual(pair) return unified_lights.manual_toggle(id(pair)) end
+function update(force) return unified_lights.reconcile(nil,false) end
+function on_game_start() end

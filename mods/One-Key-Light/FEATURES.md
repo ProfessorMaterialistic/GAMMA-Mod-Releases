@@ -1,4 +1,4 @@
-# Light 2.2.0 controls
+# Light 2.2.1 controls
 
 Headlamp and Weapon Light automatically choose White/IR according to Light Linking.
 Laser controls the supported weapon laser. Explicit actions are Headlamp - White

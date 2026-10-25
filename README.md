@@ -6,9 +6,9 @@
 
 Player light controls and community projects for **S.T.A.L.K.E.R. Anomaly / GAMMA**.
 
-Light 2.2.0 adds grouped modifier controls, Momentary Hold with Tap/Double Tap preserved, and the corrected momentary ON/OFF sounds. The owner confirmed the matched rc.7 pair works correctly; these releases preserve that gameplay code and include corresponding source.
+Light 2.2.1 keeps equipped weapon lights available during reloads and other in-hand animations, with normal inventory/PDA suspension when the weapon is hidden. Existing controls, sounds and laser behavior are retained. Owner-confirmed on the matched 2.2.1-rc.1 pair.
 
-## One Key Light 2.2.0
+## One Key Light 2.2.1
 
 Control your installed lights with one key: **Tap, Double Tap, Hold, Momentary Hold**, or the **Quick Light Menu**. Works independently; add Unified for advanced modes and NVG linking.
 
@@ -16,11 +16,11 @@ Control your installed lights with one key: **Tap, Double Tap, Hold, Momentary H
 - Normal/IR headlamp support, weapon lights and optional laser integration.
 - Explicit vanilla Torch binding clear/restore.
 
-**Released:** [Version 2.2.0](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/releases/tag/one-key-light-v2.2.0).
+**Released:** [Version 2.2.1](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/releases/tag/one-key-light-v2.2.1).
 
 [Download](mods/One-Key-Light/README.md#download) · [Install](mods/One-Key-Light/INSTALL.md) · [Requirements](mods/One-Key-Light/COMPATIBILITY.md) · [Features](mods/One-Key-Light/FEATURES.md) · [Changelog](mods/One-Key-Light/CHANGELOG.md)
 
-## Unified Player Light Controls 2.2.0
+## Unified Player Light Controls 2.2.1
 
 Keep light modes and tuning consistent across native controls and supported device dialogs. Link visible/IR channels to NVG state, with AUTO for supported weapon lights and lasers.
 
@@ -28,7 +28,7 @@ Keep light modes and tuning consistent across native controls and supported devi
 - Separate or NVG Linked weapon/headlamp routes.
 - Works alone or with One Key's gestures and menu.
 
-**Released:** [Version 2.2.0](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/releases/tag/unified-player-light-controls-v2.2.0).
+**Released:** [Version 2.2.1](https://github.com/ProfessorMaterialistic/GAMMA-Mod-Releases/releases/tag/unified-player-light-controls-v2.2.1).
 
 [Download](mods/Unified-Player-Light-Controls/README.md#download) · [Install](mods/Unified-Player-Light-Controls/INSTALL.md) · [Requirements](mods/Unified-Player-Light-Controls/COMPATIBILITY.md) · [Features](mods/Unified-Player-Light-Controls/FEATURES.md) · [Changelog](mods/Unified-Player-Light-Controls/CHANGELOG.md)
 

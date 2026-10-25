@@ -1,0 +1,37 @@
+-- Legacy MGI facade; all state operations go to the authoritative public API.
+function is_applying() return unified_lights.is_applying() end
+function native(fn) return fn() end
+function weapon() return light_backends.weapon() end
+function family() return unified_lights.family() end
+function read(mode,field) return unified_lights.read(mode,field) end
+function requested(mode) return light_backends.requested(unified_lights.get_route(mode)) end
+function automatic_policy(mode,fallback) return unified_lights.policy(mode) end
+function state(mode,fallback) return unified_lights.get_mode(mode) end
+function gate(mode,fallback) local v=state(mode);return v==0 and -1 or v==1 and 0 or automatic_policy(mode,fallback) end
+function supported(mode) return unified_lights.get_state(mode).installed end
+function apply(mode) return unified_lights.reconcile(nil,false) end
+function select(mode,value,fallback) return unified_lights.set_mode(mode,value) end
+function manual(mode) return unified_lights.manual_toggle(mode) end
+function emitting(mode) return unified_lights.get_state(mode).emitting end
+function reset_policy(mode) return unified_lights.set_policy(mode,0) end
+function set_policy(mode,value) return unified_lights.set_policy(mode,value) end
+function sync_blocked(mode) return state(mode)==0 end
+function refresh(dialog,mode,fallback)
+    if not dialog.light_modes then return end
+    local value=state(mode)
+    for i,label in ipairs({"OFF","ON","AUTO"}) do
+        if not dialog.light_modes[i] then break end
+        local b=dialog.light_modes[i];b:Enable(supported(mode));b:TextControl():SetText(value==i-1 and "["..label.."]" or label)
+    end
+end
+function init(dialog,parent,mode,y,fallback)
+    local xml=CScriptXmlInit();xml:ParseFile("ui_bling_light_modes.xml");dialog.light_modes={}
+    local count=unified_lights.supports_auto(mode) and 3 or 2
+    for i=1,count do
+        local value=i-1;local b=xml:Init3tButton("mode",parent);b:SetWndPos(vector2():set(25+(i-1)*132,y));dialog.light_modes[i]=b
+        local name="bling_mode_"..i;dialog:Register(b,name)
+        dialog:AddCallback(name,ui_events.BUTTON_CLICKED,function() select(mode,value);refresh(dialog,mode) end,dialog)
+    end
+    refresh(dialog,mode)
+end
+function on_game_start() end

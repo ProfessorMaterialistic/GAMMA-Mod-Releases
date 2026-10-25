@@ -1,0 +1,97 @@
+<w>
+    <background x="545" y="58" width="440" height="650" stretch="1">
+        <texture r="0" g="0" b="0" a="220">ui_icons_PDA_tooltips</texture>
+    </background>
+
+    <caption x="15" y="14" width="410" height="28">
+        <text font="graffiti22" r="220" g="220" b="220" a="255" align="c"></text>
+    </caption>
+
+    <subtitle x="15" y="44" width="410" height="20">
+        <text font="letterica16" r="130" g="170" b="130" a="255" align="c"></text>
+    </subtitle>
+
+    <status_title x="20" y="78" width="400" height="22">
+        <text font="letterica18" r="200" g="200" b="200" a="255"></text>
+    </status_title>
+
+    <status_equipped x="30" y="106" width="380" height="20">
+        <text font="letterica16" r="170" g="170" b="170" a="255"></text>
+    </status_equipped>
+
+    <status_deployed x="30" y="130" width="380" height="20">
+        <text font="letterica16" r="170" g="170" b="170" a="255"></text>
+    </status_deployed>
+
+    <status_torch x="30" y="154" width="380" height="20">
+        <text font="letterica16" r="170" g="170" b="170" a="255"></text>
+    </status_torch>
+
+    <lbl_ir_enabled x="58" y="194" width="340" height="22">
+        <text font="letterica18" r="210" g="210" b="210" a="255"></text>
+    </lbl_ir_enabled>
+    <chk_ir_enabled x="20" y="188" width="35" height="30" stretch="1">
+        <texture>ui_inGame2_checkbox</texture>
+    </chk_ir_enabled>
+
+    <lbl_brightness x="25" y="240" width="260" height="20">
+        <text font="letterica18" r="200" g="200" b="200" a="255"></text>
+    </lbl_brightness>
+    <value_brightness x="345" y="240" width="65" height="20">
+        <text font="letterica16" r="180" g="210" b="180" a="255" align="r"></text>
+    </value_brightness>
+    <track_brightness x="25" y="264" width="385" height="22"
+        min="0.10" max="1.20" step="0.05" is_integer="0">
+        <texture>ui_slider_e</texture>
+    </track_brightness>
+
+    <lbl_range x="25" y="304" width="260" height="20">
+        <text font="letterica18" r="200" g="200" b="200" a="255"></text>
+    </lbl_range>
+    <value_range x="345" y="304" width="65" height="20">
+        <text font="letterica16" r="180" g="210" b="180" a="255" align="r"></text>
+    </value_range>
+    <track_range x="25" y="328" width="385" height="22"
+        min="0" max="1" step="0.01" is_integer="0">
+        <texture>ui_slider_e</texture>
+    </track_range>
+
+    <lbl_beam_size x="25" y="368" width="260" height="20">
+        <text font="letterica18" r="200" g="200" b="200" a="255"></text>
+    </lbl_beam_size>
+    <value_beam_size x="330" y="368" width="80" height="20">
+        <text font="letterica16" r="180" g="210" b="180" a="255" align="r"></text>
+    </value_beam_size>
+    <track_beam_size x="25" y="392" width="385" height="22"
+        min="0" max="1" step="0.01" is_integer="0">
+        <texture>ui_slider_e</texture>
+    </track_beam_size>
+
+    <lbl_auto_sync x="58" y="444" width="340" height="22">
+        <text font="letterica18" r="190" g="190" b="190" a="255"></text>
+    </lbl_auto_sync>
+    <chk_auto_sync x="20" y="438" width="35" height="30" stretch="1">
+        <texture>ui_inGame2_checkbox</texture>
+    </chk_auto_sync>
+
+    <lbl_play_sound x="58" y="484" width="340" height="22">
+        <text font="letterica18" r="190" g="190" b="190" a="255"></text>
+    </lbl_play_sound>
+    <chk_play_sound x="20" y="478" width="35" height="30" stretch="1">
+        <texture>ui_inGame2_checkbox</texture>
+    </chk_play_sound>
+
+    <required_notice x="20" y="524" width="400" height="42">
+        <text font="letterica16" r="150" g="180" b="150" a="255" align="c"></text>
+    </required_notice>
+
+    <btn_reset x="25" y="590" width="170" height="32" stretch="1">
+        <texture>ui_button_ordinary</texture>
+        <text font="letterica18" align="c"></text>
+    </btn_reset>
+
+    <btn_close x="245" y="590" width="170" height="32" stretch="1">
+        <texture>ui_button_ordinary</texture>
+        <text font="letterica18" align="c"></text>
+    </btn_close>
+</w>

@@ -1,0 +1,132 @@
+<?xml version='1.0' encoding='utf-8'?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://qconsulting.ca/fo3/ModConfig5.0.xsd">
+  <moduleName>One Key Light 2.1.2-rc.1</moduleName>
+  <requiredInstallFiles>
+    <folder source="Core/gamedata" destination="gamedata" priority="0" />
+    <file source="README.md" destination="README.md" priority="0" />
+    <file source="RELEASE-NOTES.md" destination="RELEASE-NOTES.md" priority="0" />
+    <file source="INSTALL.md" destination="INSTALL.md" priority="0" />
+    <file source="FEATURES.md" destination="FEATURES.md" priority="0" />
+    <file source="COMPATIBILITY.md" destination="COMPATIBILITY.md" priority="0" />
+    <file source="CHANGELOG.md" destination="CHANGELOG.md" priority="0" />
+    <file source="CREDITS.md" destination="CREDITS.md" priority="0" />
+    <file source="VERSION" destination="VERSION" priority="0" />
+    <file source="LICENSE-NOTICES.md" destination="LICENSE-NOTICES.md" priority="0" />
+    <file source="SOURCE-AVAILABILITY.md" destination="SOURCE-AVAILABILITY.md" priority="0" />
+    <file source="UTLF-GPL-3.0.txt" destination="UTLF-GPL-3.0.txt" priority="0" />
+    <file source="GAMMA-AGPL-3.0.txt" destination="GAMMA-AGPL-3.0.txt" priority="0" />
+    <file source="SOY-MIT.txt" destination="SOY-MIT.txt" priority="0" />
+    <file source="MODIFICATIONS.md" destination="MODIFICATIONS.md" priority="0" />
+  </requiredInstallFiles>
+  <installSteps order="Explicit">
+    <installStep name="Dependencies">
+      <optionalFileGroups order="Explicit">
+        <group name="Required host" type="SelectAtLeastOne">
+          <plugins order="Explicit">
+            <plugin name="GAMMA and MCM are installed">
+              <description>Owner retest: MT-TEST 2026.08.04 / xrCore 10100 in the specific Bodycam/MT environment, AnomalyDX11AVX.exe with matching engine gamedata and MCM. Other engines/variants are unverified. Historical 2.0 used MT-TEST 2026.09.07 / xrCore 10074; it is not a second 2.1 retest. MGI and companion are optional. Includes scoped license notices and corresponding-source information.</description>
+              <typeDescriptor>
+                <type name="Recommended" />
+              </typeDescriptor>
+            </plugin>
+          </plugins>
+        </group>
+      </optionalFileGroups>
+    </installStep>
+    <installStep name="Headlamp backend">
+      <optionalFileGroups order="Explicit">
+        <group name="Choose the same backend in both mods" type="SelectExactlyOne">
+          <plugins order="Explicit">
+            <plugin name="Native / G2X">
+              <description>Keeps the engine headlamp and installed G2X/DLTX presets. No Soy Adjustable dependency. Brightness, cone, range and visible color sliders do not control the native beam. G2X assets must be installed separately. Use the same backend choice in both companion installers.</description>
+              <files>
+                <folder source="HeadlampBackends/Native/gamedata" destination="gamedata" priority="10" />
+              </files>
+              <typeDescriptor>
+                <type name="Recommended" />
+              </typeDescriptor>
+            </plugin>
+            <plugin name="Soy Adjustable Headlamps 1.0">
+              <description>Requires Soy's Adjustable Headlamps 1.0 installed separately. Uses its ScriptLight rendering and battery integration. Enables headlamp tuning. Use the same backend choice in both companion installers.</description>
+              <files>
+                <folder source="HeadlampBackends/Adjustable/gamedata" destination="gamedata" priority="10" />
+              </files>
+              <typeDescriptor>
+                <type name="Optional" />
+              </typeDescriptor>
+            </plugin>
+          </plugins>
+        </group>
+      </optionalFileGroups>
+    </installStep>
+    <installStep name="Laser integration">
+      <optionalFileGroups order="Explicit">
+        <group name="Laser Settings support" type="SelectExactlyOne">
+          <plugins order="Explicit">
+            <plugin name="No Laser Settings integration">
+              <description>Lighting controls only. Does not install a laser dependency.</description>
+              <typeDescriptor>
+                <type name="Recommended" />
+              </typeDescriptor>
+            </plugin>
+            <plugin name="Laser Settings 2.7 installed">
+              <description>Requires Borksy Laser Settings 2.7. Installs the canonical synchronous input/setter bridge. Unified also retains its existing tuning GUI, reset/export and aim policies.</description>
+              <files>
+                <folder source="LaserBackends/LaserSettings/gamedata" destination="gamedata" priority="10" />
+              </files>
+              <typeDescriptor>
+                <type name="Optional" />
+              </typeDescriptor>
+            </plugin>
+          </plugins>
+        </group>
+      </optionalFileGroups>
+    </installStep>
+    <installStep name="UTLF IR compatibility">
+      <optionalFileGroups order="Explicit">
+        <group name="UTLF IR supported dependency" type="SelectExactlyOne">
+          <plugins order="Explicit">
+            <plugin name="Not installed">
+              <description>Skip this compatibility patch.</description>
+              <typeDescriptor>
+                <type name="Recommended" />
+              </typeDescriptor>
+            </plugin>
+            <plugin name="Soy's UTLF IR Mode 1.03 and UTLF 1.0.2 installed">
+              <description>Select only with the listed dependencies enabled. Installs compatibility scripts, not dependency assets. Neither companion mod is required.</description>
+              <files>
+                <folder source="Compatibility/UTLF_IR/gamedata" destination="gamedata" priority="10" />
+              </files>
+              <typeDescriptor>
+                <type name="Optional" />
+              </typeDescriptor>
+            </plugin>
+          </plugins>
+        </group>
+      </optionalFileGroups>
+    </installStep>
+    <installStep name="IR Headlamp compatibility">
+      <optionalFileGroups order="Explicit">
+        <group name="IR Headlamp supported dependency" type="SelectExactlyOne">
+          <plugins order="Explicit">
+            <plugin name="Not installed">
+              <description>Skip this compatibility patch.</description>
+              <typeDescriptor>
+                <type name="Recommended" />
+              </typeDescriptor>
+            </plugin>
+            <plugin name="Soy's IR Headlamps 1.3.0 and its NVG illuminator module installed">
+              <description>Select only with the listed dependencies enabled. Installs compatibility scripts, not dependency assets. Neither companion mod is required.</description>
+              <files>
+                <folder source="Compatibility/Headlamp_IR/gamedata" destination="gamedata" priority="10" />
+              </files>
+              <typeDescriptor>
+                <type name="Optional" />
+              </typeDescriptor>
+            </plugin>
+          </plugins>
+        </group>
+      </optionalFileGroups>
+    </installStep>
+  </installSteps>
+</config>

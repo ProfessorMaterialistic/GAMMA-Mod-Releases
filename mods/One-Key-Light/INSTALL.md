@@ -1,8 +1,8 @@
-# Install or update Light 2.2.0
+# Install or update Light 2.2.1
 
 1. Save and close GAMMA and MO2. Keep a pre-update save and your current Light mods.
 2. Install each .7z through MO2 as a new mod. If using both Light mods, update both
-   to 2.2.0 and choose the same headlamp backend and integrations in both installers.
+   to 2.2.1 and choose the same headlamp backend and integrations in both installers.
 3. Select only integrations whose dependencies are installed. Keep existing backend
    choices when upgrading. The installers do not supply complete dependencies.
 4. Disable the replaced Light entries and enable the new ones at their previous
@@ -14,6 +14,12 @@
 One Key and Unified also work separately. Without Unified, advanced AUTO and
 linked-mode controls are unavailable. Headlamps remain OFF/ON; supported weapon
 lights and lasers retain AUTO when using Unified.
+
+## Animation continuity check
+
+With Weapon Light ON, reload and inspect; repeat White/IR and NVG Linked.
+Check inventory/PDA with the weapon visible and holstered, then Momentary Hold
+release/cancel and sounds. AUTO can switch off when you leave its aiming policy.
 
 ## Quick check
 

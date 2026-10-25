@@ -1,0 +1,81 @@
+-- Configuration for the existing five-sector renderer. Stable ordering keeps
+-- ties predictable; unsupported CQB entries never occupy a sector.
+actions={"headlamp","utlf_visible","laser","utlf_ir","headlamp_ir","cqb_white","cqb_ir","cqb_white_laser","cqb_ir_laser","momentary_laser"}
+function label(id) return light_compat.action_name(id) end
+local function alias(id)
+    return id=="weapon_situational" and "utlf_visible" or id=="headlamp_situational" and "headlamp" or id
+end
+function arrange(items,cfg)
+    local ranked={}
+    for index,entry in ipairs(items) do
+        local id=alias(entry.id)
+        if (not id:find("^cqb_") and id~="momentary_laser" or cfg["show_"..id]==true) then
+            ranked[#ranked+1]={entry=entry,rank=tonumber(cfg["position_"..id]) or index,index=index}
+        end
+    end
+    table.sort(ranked,function(a,b) return a.rank==b.rank and a.index<b.index or a.rank<b.rank end)
+    local result={}
+    for i=1,math.min(5,#ranked) do result[i]=ranked[i].entry end
+    return result
+end
+function icon(id,cfg)
+    local value=cfg["icon_"..alias(id)]
+    if value and value~="default" then return value end
+    return ({cqb_white="weapon_light",cqb_ir="weapon_ir",cqb_white_laser="laser",cqb_ir_laser="nvg",momentary_laser="laser"})[id]
+        or one_key_lights_icons.action(id)
+end
+function palette(theme,cfg)
+    local copy={};for key,value in pairs(theme) do copy[key]=value end
+    if cfg.custom_accent then
+        local function color(key,default) return math.max(0,math.min(255,tonumber(cfg[key]) or default)) end
+        copy.hover={color("accent_r",70),color("accent_g",160),color("accent_b",110)}
+        copy.on=copy.hover
+    end
+    return copy
+end
+function profile_keys()
+    local keys={"radial_theme","menu_size","menu_opacity","radial_labels","icon_style","indicator_style","show_battery","show_locks","battery_color","custom_accent","accent_r","accent_g","accent_b","hide_bound","radial_behavior","right_click","menu_selection","allow_movement"}
+    for _,id in ipairs(actions) do
+        for _,prefix in ipairs({"show_","position_","icon_"}) do keys[#keys+1]=prefix..id end
+    end
+    return keys
+end
+local function current_option(id,ui)
+    if ui then
+        local path=one_key_lights_mcm.path(id)
+        local option=ui:GetOption(path)
+        if option then return ui:GetValue("one_key_lights/menu",id,option) end
+    end
+    return ui_mcm.get(one_key_lights_mcm.path(id))
+end
+function profile_slot(ui) return current_option("radial_profile",ui) end
+function save_profile(slot,ui)
+    slot=math.max(1,math.min(3,tonumber(slot) or 1))
+    for _,id in ipairs(profile_keys()) do
+        local value=current_option(id,ui)
+        if value==nil then value=one_key_lights_mcm.defaults[id] end
+        axr_main.config:w_value("mcm","one_key_lights/profiles/"..slot.."/"..id,value)
+    end
+    axr_main.config:w_value("mcm","one_key_lights/profiles/"..slot.."/saved",true)
+    axr_main.config:save()
+end
+function load_profile(slot,ui)
+    slot=math.max(1,math.min(3,tonumber(slot) or 1))
+    local prefix="one_key_lights/profiles/"..slot.."/"
+    if not axr_main.config:r_value("mcm",prefix.."saved",1) then return false end
+    for _,id in ipairs(profile_keys()) do
+        local default=one_key_lights_mcm.defaults[id]
+        local kind=type(default)=="boolean" and 1 or type(default)=="number" and 2 or 0
+        local value=axr_main.config:r_value("mcm",prefix..id,kind)
+        if value~=nil then
+            local path=one_key_lights_mcm.path(id)
+            if ui then
+                local option=ui:GetOption(path)
+                if option then ui:CacheValue("one_key_lights/menu",id,value,option) end
+            else axr_main.config:w_value("mcm",path,value) end
+        end
+    end
+    -- Native MCM Apply/Cancel owns pending edits. Programmatic loads commit once.
+    if not ui then axr_main.config:save();one_key_lights_input.load_settings() end
+    return true
+end

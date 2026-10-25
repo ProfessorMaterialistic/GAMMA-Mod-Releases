@@ -1,0 +1,77 @@
+<w>
+  <background x="545" y="90" width="440" height="560" stretch="1">
+    <texture r="0" g="0" b="0" a="220">ui_icons_PDA_tooltips</texture>
+  </background>
+  <caption x="15" y="14" width="410" height="28">
+    <text font="graffiti22" r="220" g="220" b="220" a="255" align="c" />
+  </caption>
+  <subtitle x="15" y="44" width="410" height="20">
+    <text font="letterica16" r="130" g="170" b="130" a="255" align="c" />
+  </subtitle>
+  <status_torch x="30" y="90" width="380" height="20">
+    <text font="letterica16" r="170" g="170" b="170" a="255" />
+  </status_torch>
+  <lbl_enabled x="58" y="140" width="340" height="22">
+    <text font="letterica18" r="210" g="210" b="210" a="255" />
+  </lbl_enabled>
+  <chk_enabled x="20" y="134" width="35" height="30" stretch="1">
+    <texture>ui_inGame2_checkbox</texture>
+  </chk_enabled>
+  <lbl_brightness x="25" y="190" width="260" height="20">
+    <text font="letterica18" r="200" g="200" b="200" a="255" />
+  </lbl_brightness>
+  <value_brightness x="345" y="190" width="65" height="20">
+    <text font="letterica16" r="180" g="210" b="180" a="255" align="r" />
+  </value_brightness>
+  <track_brightness x="25" y="214" width="385" height="22" min="0.10" max="1.20" step="0.05" is_integer="0">
+    <texture>ui_slider_e</texture>
+  </track_brightness>
+  <lbl_range x="25" y="254" width="260" height="20">
+    <text font="letterica18" r="200" g="200" b="200" a="255" />
+  </lbl_range>
+  <value_range x="345" y="254" width="65" height="20">
+    <text font="letterica16" r="180" g="210" b="180" a="255" align="r" />
+  </value_range>
+  <track_range x="25" y="278" width="385" height="22" min="0" max="1" step="0.01" is_integer="0">
+    <texture>ui_slider_e</texture>
+  </track_range>
+  <lbl_beam_size x="25" y="318" width="260" height="20">
+    <text font="letterica18" r="200" g="200" b="200" a="255" />
+  </lbl_beam_size>
+  <value_beam_size x="330" y="318" width="80" height="20">
+    <text font="letterica16" r="180" g="210" b="180" a="255" align="r" />
+  </value_beam_size>
+  <track_beam_size x="25" y="342" width="385" height="22" min="0" max="1" step="0.01" is_integer="0">
+    <texture>ui_slider_e</texture>
+  </track_beam_size>
+  <notice x="20" y="446" width="400" height="42">
+    <text font="letterica16" r="150" g="180" b="150" a="255" align="c" />
+  </notice>
+  <btn_reset x="25" y="490" width="170" height="32" stretch="1">
+    <texture>ui_button_ordinary</texture>
+    <text font="letterica18" align="c" />
+  </btn_reset>
+  <btn_close x="245" y="490" width="170" height="32" stretch="1">
+    <texture>ui_button_ordinary</texture>
+    <text font="letterica18" align="c" />
+  </btn_close>
+  <lbl_color x="25" y="374" width="160" height="22">
+    <text font="letterica18" r="200" g="200" b="200" a="255" />
+  </lbl_color>
+  <btn_color_1 x="25" y="402" width="91" height="30" stretch="1">
+    <texture>ui_button_ordinary</texture>
+    <text font="letterica16" align="c" r="180" g="210" b="180" a="255" />
+  </btn_color_1>
+  <btn_color_2 x="123" y="402" width="91" height="30" stretch="1">
+    <texture>ui_button_ordinary</texture>
+    <text font="letterica16" align="c" r="180" g="210" b="180" a="255" />
+  </btn_color_2>
+  <btn_color_3 x="221" y="402" width="91" height="30" stretch="1">
+    <texture>ui_button_ordinary</texture>
+    <text font="letterica16" align="c" r="180" g="210" b="180" a="255" />
+  </btn_color_3>
+  <btn_color_4 x="319" y="402" width="91" height="30" stretch="1">
+    <texture>ui_button_ordinary</texture>
+    <text font="letterica16" align="c" r="180" g="210" b="180" a="255" />
+  </btn_color_4>
+</w>
