@@ -1,17 +1,15 @@
 {
-  "version": "2.2.0",
-  "gameplay": "TESTED: owner accepted matched rc.7; stable gameplay code unchanged",
-  "date": "2026-10-24",
+  "version": "2.2.2",
+  "gameplay": "NOT TESTED: sprint fix has automated validation; owner authorized publication",
+  "date": "2026-10-25",
   "archives": [
     {
-      "archive": "One-Key-Light-v2.2.0.7z",
-      "sha256": "b4859a4d8573fbcc8247588083898c8f3f5b30772d88d1129c2df7d8378ac990",
-      "bytes": 107395
+      "archive": "One-Key-Light-v2.2.2.7z",
+      "sha256": "3c608dd5fb41f0f24c0bd45113306a2b50561091c2cab87bc3c3b61dfc04d62d"
     },
     {
-      "archive": "Unified-Player-Light-Controls-v2.2.0.7z",
-      "sha256": "08dc2041bae123e6f5c38a289e4ebe01b6d52bf56a7bc284c7e981ba00fdfe88",
-      "bytes": 82153
+      "archive": "Unified-Player-Light-Controls-v2.2.2.7z",
+      "sha256": "da386174efe87df3b60b1ea14bce762bce15225b7d4967164917e96b8b18ed31"
     }
   ]
 }
